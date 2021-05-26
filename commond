@@ -1,0 +1,4 @@
+vi 查找替换
+:%s/demo/ucpapitest1/g
+
+netstat -ntlp   查看端口与进程
