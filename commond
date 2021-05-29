@@ -2,3 +2,6 @@ vi 查找替换
 :%s/demo/ucpapitest1/g
 
 netstat -ntlp   查看端口与进程
+
+sed -i  替换文件内容
+sed -i 's/原字符/新字符/g' regular_express.txt
