@@ -1,0 +1,7 @@
+1  waf
+
+- dns -> waf -> elb（tcp）(这个就是waf里的源站地址)-> soul-server（ecs） -> elb（tcp）-> service(lb) -> pod
+
+ 回源IP的概念：
+   什么是回源IP？
+回源IP是WAF用来代理客户端请求服务器时用的源IP，在服务器看来，接入WAF后所有源IP都会变成WAF的回源IP，而真实的客户端地址会被加在HTTP头部的XFF字段中。
