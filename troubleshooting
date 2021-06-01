@@ -1,3 +1,16 @@
- kubectl get pods
+1，
+kubectl get pods
 The connection to the server localhost:8080 was refused - did you specify the right host or port?
+https://www.cnblogs.com/yeyu1314/p/13430973.html  弄一个kubeconfig文件  然后  kubectl --kubeconfig=文件路径  get pods 就可以了。
+
+node节点使用kubectl得有config
+https://www.cnblogs.com/yeyu1314/p/13430973.html
+
+https://blog.csdn.net/qq_41475058/article/details/88844210
+1、kubectl 默认通过127.0.0.1:8080端口去访问apiserver，这个在前面apiserver的配置文件里有定义了。在master通过http访问apiserver，而在其他节点通过https来访问
+
+在master上可以看到6443端口，用于集群接口https访问的
+————————————————
+版权声明：本文为CSDN博主「光明小学王小雨」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/qq_41475058/article/details/88844210
 
