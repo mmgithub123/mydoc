@@ -28,3 +28,61 @@
 企业项目是项目的升级版，针对企业不同项目间资源的分组和管理，是逻辑隔离。企业项目中可以包含多个区域的资源，且项目中的资源可以迁入迁出。
 
 关于企业项目ID的获取及企业项目特性的详细信息，请参见《企业管理用户指南》。
+
+
+二，api凭证
+我的凭证
+https://console.huaweicloud.com/iam/?region=cn-north-4&locale=zh-cn#/mine/apiCredential
+IAM用户名 wu.xu
+IAM用户ID 0c785b。。。
+帐号名 joy。。。
+帐号ID 0b0f33。。。。
+
+项目ID	    项目	       所属区域
+0b1。。。	cn-north-4	华北-北京四
+
+三，DNS api 列表大全
+https://support.huaweicloud.com/api-dns/zh-cn_topic_0132421999.html
+
+四，分区端点列表
+https://developer.huaweicloud.com/endpoint?DNS
+
+五，构造请求，由协议，端点，资源URL三个部分构成
+使用例子：
+https://support.huaweicloud.com/api-dns/zh-cn_topic_0037134406.html
+
+POST （https）://（iam.cn-north-1.myhuaweicloud.com)/(v3/auth/tokens)
+HTTP方法
+方法
+
+GET
+
+请求服务器返回指定资源。
+
+PUT
+
+请求服务器更新指定资源。
+
+POST
+
+请求服务器新增资源或执行特殊操作。
+
+DELETE
+
+请求服务器删除指定资源，如删除对象等。
+
+HEAD
+
+请求服务器资源头部。
+
+PATCH
+
+请求服务器更新资源的部分内容。
+
+当资源不存在的时候，PATCH可能会去创建一个新的资源。
+
+
+六，
+
+
+
