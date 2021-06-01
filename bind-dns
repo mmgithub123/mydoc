@@ -1,0 +1,13 @@
+By default BIND will install in /usr/local and place files in these subdirectories of it:
+
+sbin - named and all the system administrative tools associated with BIND such as rndc, dnssec-keygen, named-checkconf etc..
+bin - tools for non-admin users - you'll find dig, host and nsupdate here
+lib - object code libraries
+share - (and various subdirectories) BIND's man pages
+include - C header files
+In addition, BIND compiled with no change to the default directories will expect to use the following directories (relative to /)
+
+/etc - configuration files (such as named.conf, rndc.conf)
+/var/run - run-time files created and used by named
+
+-----------------------------------------------------------------------------
