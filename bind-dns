@@ -11,3 +11,40 @@ In addition, BIND compiled with no change to the default directories will expect
 /var/run - run-time files created and used by named
 
 -----------------------------------------------------------------------------
+
+install and use
+
+..yum install bind bind-utils
+2,You're now ready to run named as a background daemon. Before launching it, 
+it's a good idea to set up the default options for the management tool rndc.
+..rndc-confgen -a
+3,start
+..systemctl start named
+..netstat -nlp
+
+----------------------------------------------------------
+
+best Practices  ：
+https://kb.isc.org/docs/bind-best-practices-authoritative
+https://kb.isc.org/docs/bind-best-practices-recursive
+
+1，Run BIND on a server dedicated to DNS only
+2，Run separate authoritative and recursive DNS servers
+3，Choose appropriate software and hardware
+
+Take basic security measures
+Run BIND as an unprivileged user.
+To open low-numbered UDP and TCP ports BIND must be launched as root, but an alternate uid can be specified using the -u command line argument; 
+after opening needed resources named will change its runtime uid to an unprivileged account.
+
+Monitor the service
+Put in place monitoring scripts to continually check health of servers and alert if conditions change substantially.
+
+Conditions to monitor include:
+
+process presence
+CPU utilization
+memory usage
+network throughput and buffering (inbound/outbound)
+filesystem utilization (on the log filesystem and also the filesystem containing the named working directory)
+---------------------------------------------------------------------------------------------------------------------
