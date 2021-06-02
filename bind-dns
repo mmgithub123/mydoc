@@ -1,3 +1,7 @@
+记录存储：
+一种是允许外部进程在服务器运行的时候更新zone文件；
+　　另外一种是将zone中的资源记录RR存储在数据库中，每次查找zone中记录的时候动态读取；
+------------------------------------------------------------------------------------------
 By default BIND will install in /usr/local and place files in these subdirectories of it:
 
 sbin - named and all the system administrative tools associated with BIND such as rndc, dnssec-keygen, named-checkconf etc..
@@ -10,6 +14,7 @@ In addition, BIND compiled with no change to the default directories will expect
 /etc - configuration files (such as named.conf, rndc.conf)
 /var/run - run-time files created and used by named
 
+log位置  统一看配置文件
 -----------------------------------------------------------------------------
 
 install and use
@@ -85,4 +90,13 @@ dns实际使用中，即用递归查询，又使用迭代查询
    
    DNS协议使用udp/tcp的53端口提供服务，客户端向DNS服务发起请求时，使用udp的53端口；DNS服务器间进行区域传送的时候使用TCP的53端口。
    
+   -------------------------------------------------------------------------------------------------
+   stress testing：
+   DNS Latency is the #1 “Key Performance Indicator” (KPI) for a DNS system’s success
+   tool：
+https://github.com/DNS-OARC/flamethrower
+https://github.com/cobblau/dnsperf
+
+基准：
+https://github.com/cleanbrowsing/dnsperftest
    
