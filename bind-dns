@@ -100,5 +100,14 @@ https://github.com/cobblau/dnsperf
 基准：
 https://github.com/cleanbrowsing/dnsperftest
 
+bind 自带queryperf压测
 https://blog.51cto.com/wubinary/1379595
+wget  https://downloads.isc.org/isc/bind9/cur/9.11/bind-9.11.32.tar.gz
+tar -zxvf bind-9.11.32.tar.gz
+cd contrib/queryperf
+./configure
+make
+cp queryperf /usr/bin
+queryperf --help
+queryperf -d  input-file.txt  -l 100
    
