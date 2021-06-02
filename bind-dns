@@ -63,3 +63,26 @@ named-checkconf，named-checkzone，named-compilezone
 　　　　服务器本身不提供解析区域，只提供非权威应答。
 　　4、转发服务器
 　　　　当DNS服务器的解析区域（包括缓存）中无法为当前的请求提供权威应答时，将请求转发至其它的DNS服务器，此时本地DNS服务器就是转发服务器。
+    
+    DNS的主要作用是进行主机名的解析。解析：根据用户提供一种名称，去查询解析库，以得到另一种名称。 正向解析与反向解析使用不同的解析库。
+
+　　资源记录：rr(resource record)，有类型的概念；用于此记录解析的属性。
+
+A：Address地址 IPv4
+AAAA：Address地址 IPv6
+NS：Name Server域名服务器
+SOA：Start of Authority授权状态
+MX：Mail Exchanger邮件交换
+CNAME：Canonical Name规范名
+PTR：Pointer指针
+
+--------------------------------------------------------------------------------------------
+dns实际使用中，即用递归查询，又使用迭代查询
+查询顺序，1、本地hosts文件
+　　　2、本地DNS缓存
+　　　3、本地DNS服务器
+　　　4、发起迭代查询
+   
+   DNS协议使用udp/tcp的53端口提供服务，客户端向DNS服务发起请求时，使用udp的53端口；DNS服务器间进行区域传送的时候使用TCP的53端口。
+   
+   
