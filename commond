@@ -5,3 +5,10 @@ netstat -ntlp   查看端口与进程
 
 sed -i  替换文件内容
 sed -i 's/原字符/新字符/g' regular_express.txt
+
+linux 中把一列加到文件的第一列中
+把A 文件的第一列剪切出来做为B文件的第一列，很简单：
+awk '{print $1}' A | paste - B
+其中，- 表示从标准输入读。
+默认分隔符为tab，可以使用-d选项修改为任意分隔符（比如空格）：
+awk '{print $1}' A | paste -d' ' file1 file2
