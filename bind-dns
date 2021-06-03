@@ -124,4 +124,58 @@ make
 cp queryperf /usr/bin
 queryperf --help
 queryperf -d  input-file.txt  -l 100
+
+并发：同时向系统请求处理的数量
+
+吞吐量：
+qps  
    
+响应时间：
+最大响应时间
+平均响应时间
+
+有效请求
+
+机器利用率
+
+queryperf -d bind-input.txt -l 300
+
+  -q specifies the maximum number of queries outstanding (default: 20) 并发数  20
+-l     specifies how a limit for how long to run tests in seconds                  压测持续时间
+
+
+并发
+20       
+
+吞吐量
+88000  qps
+
+26292327   总查询数
+300            压测持续时间
+
+
+响应时间：
+ 0.0002     平均响应时间
+0.015       最大响应时间
+
+有效请求
+ Percentage completed: 100.00%
+  Percentage lost:        0.00%
+
+ Parse input file:     multiple times
+  Run time limit:       300 seconds
+  Ran through file:     52 times
+反复 seek  请求
+
+cpu使用率    80%
+
+1颗物理CPU，双核4线程；
+
+
+load average: 3.22, 3.27, 2.52
+Tasks: 105 total,   2 running, 103 sleeping,   0 stopped,   0 zombie
+%Cpu(s): 42.6 us, 35.2 sy
+KiB Mem :  8008264 total,   128152 free,   786552
+
+
+
