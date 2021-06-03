@@ -138,6 +138,28 @@ qps
 
 机器利用率
 
+负载：
+Load Average是 CPU的Load，它所包含的信息不是CPU的使用率状况，而是在一段时间内CPU正在处理以及等待CPU处理的进程数之和的统计信息，也就是CPU使用队列的长度的统计信息。
+多核处理器中，你的Load Average不应该高于处理器核心的总数量。
+平均负载是指上一分钟同时处于就绪状态的平均进程数。在CPU中可以理解为CPU可以并行处理的任务数量，就是CPU个数X核数
+有些任务不能被及时分配处理器，那要保证性能的话，最好要小于CPU个数X核数X0.7。
+Load Average会有3个状态平均值，分别是1分钟、5分钟和15分钟平均Load。
+
+对于cpu负载的理解，首先需要搞清楚下面几个问题：
+
+1）系统load高不一定是性能有问题。
+因为Load高也许是因为在进行cpu密集型的计算
+
+2）系统Load高不一定是CPU能力问题或数量不够。
+因为Load高只是代表需要运行的队列累计过多了。但队列中的任务实际可能是耗Cpu的，也可能是耗i/0奶子其他因素的。
+
+3）系统长期Load高，解决办法不是一味地首先增加CPU
+因为Load只是表象，不是实质。增加CPU个别情况下会临时看到Load下降，但治标不治本。
+
+4）在Load average 高的情况下需要鉴别系统瓶颈到底是CPU不足，还是io不够快造成或是内存不足造成的。
+—
+
+
 queryperf -d bind-input.txt -l 300
 
   -q specifies the maximum number of queries outstanding (default: 20) 并发数  20
