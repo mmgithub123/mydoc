@@ -1,0 +1,7 @@
+kubectl get pods
+
+kubectl describe pod pod-name
+
+kubectl logs pod-name (-n namespace-name)
+
+kubectl exec pod-name -c container-name useing-command
