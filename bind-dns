@@ -233,3 +233,25 @@ KiB Mem :  8008264 total,   128152 free,   786552
 
 
 
+top
+ load average: 2.55, 2.85, 2.02
+ 
+ %Cpu0  : 48.0 us, 31.8 sy,  0.0 ni, 16.6 id,  0.0 wa,  0.0 hi,  3.7 si,  0.0 st
+%Cpu1  : 46.5 us, 33.7 sy,  0.0 ni, 16.5 id,  0.0 wa,  0.0 hi,  3.4 si,  0.0 st
+%Cpu2  : 43.4 us, 33.9 sy,  0.0 ni, 20.0 id,  0.0 wa,  0.0 hi,  2.7 si,  0.0 st
+%Cpu3  : 43.1 us, 37.3 sy,  0.0 ni, 11.5 id,  0.0 wa,  0.0 hi,  8.1 si,  0.0 st
+KiB Mem :  8008264 total,   126704 free,   704372 used,  7177188 buff/cache
+KiB Swap:        0 total,        0 free,        0 used.  6988080 avail Mem 
+
+  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                                              
+30734 named     20   0  542648 215268   1720 S 267.4  2.7 281:24.10 named       
+
+ 
+在top页面按1   看具体core的cpu情况
+通过上面的显示我们发现Cpu(s)表示的是 所有用户进程占用整个cpu的平均值，由于每个核心占用的百分比不同，所以按平均值来算比较有参考意义。
+而%CPU显示的是进程占用一个核的百分比，而不是整个cpu（12核）的百分比，有时候可能大于100，那是因为该进程启用了多线程占用了多个核心，
+所以有时候我们看该值得时候会超过100%，但不会超过总核数*100。
+
+监控网卡流量：
+ watch -d 'ifconfig eth0'
+
