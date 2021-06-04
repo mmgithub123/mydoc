@@ -1,7 +1,14 @@
 kubectl get pods
 
-kubectl describe pod pod-name
+kubectl describe pod pod-name -o wide
 
+查看pod日志
 kubectl logs pod-name (-n namespace-name)
 
+指定容器执行命令
 kubectl exec pod-name -c container-name useing-command
+
+kubectl  exec -it pod-name -n namespace-name bash(sh or /bin/sh or /bin/bash)
+
+查看yaml
+kubectl get pod -n namespace-name -o yaml
