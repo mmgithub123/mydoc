@@ -111,6 +111,8 @@ www     IN A    109.63.5.4
 https://github.com/DNS-OARC/flamethrower
 https://github.com/cobblau/dnsperf
 
+https://kb.isc.org/docs/aa-00561
+
 基准：
 https://github.com/cleanbrowsing/dnsperftest
 
@@ -318,4 +320,15 @@ Garbage collection - It has to do with returning unused memory back to the syste
  pstack 3023423（进程号）
  
  strace 进程号   追踪系统调用
+ 
+ 
+ tcpdump
+ tcpdump -i any(所有网卡) udp port 53 -w tcpdump-bind-output-window-test.pcap（写到这个文件  pcap格式可以被wireshark打开）
+ 使用命令“tcpdump –i eth0 port 53”来查看DNS查询包，当然也可以把输出重定向到文件，然后使用rndc stats（bind9）来获取
+ 
+ dnstop   dns监控工具
+ 
+-----------------------------------------------------------------------------------------------
+使用，nscd（Name Service Cache Daemon）是一种能够缓存 passwd、group、hosts 的本地缓存服务，分别对应三个源 /etc/passwd、/etc/hosts、/etc/resolv.conf。
+其最为明显的作用就是加快 DNS 解析速度，在接口调用频繁的内网环境建议开启。
 
