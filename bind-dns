@@ -307,4 +307,10 @@ Garbage collection - It has to do with returning unused memory back to the syste
 
 监控网卡流量：
  watch -d 'ifconfig eth0'
+ 
+ 进程调用栈
+ pstack   属于gdb的一部分，如果没命令  yum install gdb 就可以
+ pstack 3023423（进程号）
+ 
+ strace 进程号   追踪系统调用
 
