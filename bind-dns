@@ -125,6 +125,14 @@ cp queryperf /usr/bin
 queryperf --help
 queryperf -d  input-file.txt  -l 100
 
+
+The output of queryperf is mostly self-explanatory.  Pay attention to
+the number of dropped packets reported - when running the test over a
+local Ethernet connection, it should be zero.  If one or more packets
+has been dropped, there may be a problem with the network connection.
+In that case, the results should be considered suspect and the test
+repeated.
+
 并发：同时向系统请求处理的数量
 
 吞吐量：
