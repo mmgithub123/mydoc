@@ -252,6 +252,26 @@ KiB Swap:        0 total,        0 free,        0 used.  6988080 avail Mem
 而%CPU显示的是进程占用一个核的百分比，而不是整个cpu（12核）的百分比，有时候可能大于100，那是因为该进程启用了多线程占用了多个核心，
 所以有时候我们看该值得时候会超过100%，但不会超过总核数*100。
 
+
+CPU 相关监控项
+us：用户空间占用CPU百分比（Host.cpu.user）
+sy：内核空间占用CPU百分比（Host.cpu.system）
+ni：用户进程空间内改变过优先级的进程占用CPU百分比
+id：空闲CPU百分比（Host.cpu.idle）
+wa：等待输入输出的CPU时间百分比
+hi：硬件中断
+si：软件中断
+st：实时
+监控项名称	监控项含义	单位	说明
+Host.cpu.idle	当前空闲CPU百分比	%	当前CPU处于空闲状态的百分比
+Host.cpu.system	当前内核空间占用CPU百分比	%	指系统上下文切换的消耗,该监控项数值比较高，说明服务器开了太多的进程或者线程
+Host.cpu.user	当前用户空间占用CPU百分比	%	用户进程对CPU的消耗
+Host.cpu.iowait	当前等待IO操作的CPU百分比	%	该项数值比较高说明有很频繁的IO操作
+Host.cpu.other	其他占用CPU百分比	%	其他消耗，计算方式为（Nice + SoftIrq + Irq + Stolen）的消耗
+Host.cpu.totalUsed	当前消耗的总CPU百分比	%	指以上各项CPU消耗的总和，通常用于报警
+
+
+
 监控网卡流量：
  watch -d 'ifconfig eth0'
 
