@@ -278,6 +278,31 @@ Host.cpu.iowait	当前等待IO操作的CPU百分比	%	该项数值比较高说�
 Host.cpu.other	其他占用CPU百分比	%	其他消耗，计算方式为（Nice + SoftIrq + Irq + Stolen）的消耗
 Host.cpu.totalUsed	当前消耗的总CPU百分比	%	指以上各项CPU消耗的总和，通常用于报警
 
+测试统计：
+Processor Usage - an amount of time processor spends executing non-idle threads.
+Memory use - amount of physical memory available to processes on a computer.
+Disk time - amount of time disk is busy executing a read or write request.
+Bandwidth - shows the bits per second used by a network interface.
+Private bytes - number of bytes a process has allocated that can't be shared amongst other processes. These are used to measure memory leaks and usage.
+Committed memory - amount of virtual memory used.
+Memory pages/second - number of pages written to or read from the disk in order to resolve hard page faults. Hard page faults are when code not from the current working set is called up from elsewhere and retrieved from a disk.
+Page faults/second - the overall rate in which fault pages are processed by the processor. This again occurs when a process requires code from outside its working set.
+CPU interrupts per second - is the avg. number of hardware interrupts a processor is receiving and processing each second.
+Disk queue length - is the avg. no. of read and write requests queued for the selected disk during a sample interval.
+Network output queue length - length of the output packet queue in packets. Anything more than two means a delay and bottlenecking needs to be stopped.
+Network bytes total per second - rate which bytes are sent and received on the interface including framing characters.
+Response time - time from when a user enters a request until the first character of the response is received.
+Throughput - rate a computer or network receives requests per second.
+Amount of connection pooling - the number of user requests that are met by pooled connections. The more requests met by connections in the pool, the better the performance will be.
+Maximum active sessions - the maximum number of sessions that can be active at once.
+Hit ratios - This has to do with the number of SQL statements that are handled by cached data instead of expensive I/O operations. This is a good place to start for solving bottlenecking issues.
+Hits per second - the no. of hits on a web server during each second of a load test.
+Rollback segment - the amount of data that can rollback at any point in time.
+Database locks - locking of tables and databases needs to be monitored and carefully tuned.
+Top waits - are monitored to determine what wait times can be cut down when dealing with the how fast data is retrieved from memory
+Thread counts - An applications health can be measured by the no. of threads that are running and currently active.
+Garbage collection - It has to do with returning unused memory back to the system. Garbage collection needs to be monitored for efficiency.
+
 
 
 监控网卡流量：
