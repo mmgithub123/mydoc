@@ -11,7 +11,36 @@
   不使用缓存
    // Do not allow access to cache
     allow-query-cache { none; };
+    
+    allow-recursion（recursion no;）  allow-query-cache  allow-query  
+
+recursion no; // Do not provide recursive service =〉相当于 allow-recursion { none; };
+Note that setting recursion no does not prevent clients from getting data from the server’s cache
+it only prevents new data from being cached as an effect of client queries。
+ If recursion is off and the server does not already know the answer, it returns a referral response. 
+
+allow-query-cache { none; }; // Do not allow access to cache
+
+Note that disallowing recursive queries for a host does not prevent the host from retrieving data
+that is already in the server’s cache.
+
+因此在 BIND 9.4 版本中，如果想禁止用户的递归查询请求，还需要将 allow-query-cache 选项关闭，
+否则用户仍然可能在cache中查到数据。
+    
+    recursion - 递归查询处理
+yes - 服务器将会做出所有能回答查询请求的工作（默认）
+off - 如果服务器不知道答案，它将返回一个推荐（referral）响应
+no - 捕获租住用户从服务器的缓存中得到数据，它仅仅阻止新数据作为查询的结果被缓存
   
+  ----------------------------------------------------------------------------------------
+  use
+  常见状态：
+  nxdoamin    访问域名不存在
+nxrrset   请求的记录类型不存在，比如你请求AAAA
+referral  向权威服务器请求的域名不是自己的域名，返回根线索
+refused    拒绝访问
+timeout  超时
+success 解析成功
   
 ------------------------------------------------------------------------------------------
 By default BIND will install in /usr/local and place files in these subdirectories of it:
