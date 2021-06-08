@@ -55,7 +55,7 @@ filesystem utilization (on the log filesystem and also the filesystem containing
 ---------------------------------------------------------------------------------------------------------------------
 
 tool：
-dig, host,  nslookup 
+dig, host,  nslookup ,dnstop
 named-checkconf，named-checkzone，named-compilezone
 
 类型：
@@ -68,6 +68,7 @@ named-checkconf，named-checkzone，named-compilezone
 　　　　服务器本身不提供解析区域，只提供非权威应答。
 　　4、转发服务器
 　　　　当DNS服务器的解析区域（包括缓存）中无法为当前的请求提供权威应答时，将请求转发至其它的DNS服务器，此时本地DNS服务器就是转发服务器。
+    Forwarding occurs only on those queries for which the server is not authoritative and does not have the answer in its cache.
     
     DNS的主要作用是进行主机名的解析。解析：根据用户提供一种名称，去查询解析库，以得到另一种名称。 正向解析与反向解析使用不同的解析库。
 
@@ -87,6 +88,13 @@ dns实际使用中，即用递归查询，又使用迭代查询
 　　　2、本地DNS缓存
 　　　3、本地DNS服务器
 　　　4、发起迭代查询
+   The length of time for which a record may be retained in the cache of a caching name server is controlled 
+   by the Time-To-Live (TTL) field associated with each resource record
+   
+   authoritative   权威服务
+   recursive       递归服务
+   To improve performance, recursive servers cache the results of the lookups they perform
+   
    
    DNS协议使用udp/tcp的53端口提供服务，客户端向DNS服务发起请求时，使用udp的53端口；DNS服务器间进行区域传送的时候使用TCP的53端口。
    ---------------------------------------------------------------------------
