@@ -226,12 +226,12 @@ Load Average会有3个状态平均值，分别是1分钟、5分钟和15分钟平
 
 queryperf -d bind-input.txt -l 300
 
-  -q specifies the maximum number of queries outstanding (default: 20) 并发数  20
+  -q specifies the maximum number of queries outstanding (default: 20) 并发的滑动窗口
 -l     specifies how a limit for how long to run tests in seconds                  压测持续时间
 
 
 并发
-20       
+      
 
 吞吐量
 88000  qps
