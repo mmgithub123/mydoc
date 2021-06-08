@@ -1,6 +1,18 @@
 记录存储：
 一种是允许外部进程在服务器运行的时候更新zone文件；
 　　另外一种是将zone中的资源记录RR存储在数据库中，每次查找zone中记录的时候动态读取；
+  ----------------------------------------------------------------------------------------
+  config
+  
+  最大缓存
+  Server memory must be sufficient to hold both the cache and the zones loaded from disk. 
+  The max-cache-size option can limit the amount of memory used by the cache
+  
+  不使用缓存
+   // Do not allow access to cache
+    allow-query-cache { none; };
+  
+  
 ------------------------------------------------------------------------------------------
 By default BIND will install in /usr/local and place files in these subdirectories of it:
 
