@@ -1,6 +1,36 @@
+/etc/resolv.conf
+其中域名服务器是按照文件中出现的顺序来查询的,且只有当第一个nameserver没有反应时才查询下面的nameserver
+-----------------------------------------------------
 记录存储：
 一种是允许外部进程在服务器运行的时候更新zone文件；
 　　另外一种是将zone中的资源记录RR存储在数据库中，每次查找zone中记录的时候动态读取；
+  每个区文件都是由若干个资源记录（RR，resource records）和分析器指令所组成。
+
+资源记录简介
+标准资源记录的基本格式是：
+[name] [ttl] [class] type data
+
+各个字段之间由空格或制表符分隔，字段可以包含如下的特殊字符：
+; — 引出注释
+@ — 表示当前域
+() — 允许数据跨行，通常用于 SOA 记录
+* — 仅用于 name 字段的通配符
+
+name 字段
+name 字段说明资源记录引用的对象名，可以是一台单独的主机也可以是个域名。
+对象名可以是相对域名或全域名，全域名应该以“.”结束
+若几条连续的 RR 记录涉及同一个对象名，则第一条 RR 记录后的 RR 记录可以省略对象名
+若出现字段名字段，则必须出现在第一个字段
+关于相对域名和全域名:举例来说，在 ubuntu.org.cn 域中，相对域名 osmond 与全域名 osmond.ubuntu.org.cn. 等效；而 osmond.ubuntu.org.cn 由于没有以“.”结尾，被认为是一个相对域名，与其等效的全域名为 osmond.ubuntu.org.cn.ubuntu.org.cn.。因此在书写对象名时要特别小心。
+
+ttl 字段
+ttl(time to live) 字段是一个寿命字段。它以秒为单位定义该资源记录中的信息存放在高速缓存中的时间长度。通常省略该字段，而使用位于文件开始处的 $TTL 语句所指定值。
+
+class 字段
+class 字段用于指定网络类型，可选的值有：IN、CH 和 HS，其中 IN （Internet）是广泛使用的一种。虽然 IN 是该字段的默认值，但通常我们会显示地指出。
+
+type 字段
+type 字段用于说明 RR 的类型。
   ----------------------------------------------------------------------------------------
   config
   
@@ -99,6 +129,9 @@ tool：
 dig, host,  nslookup ,dnstop
 named-checkconf，named-checkzone，named-compilezone
 
+指定202.106.0.20这个服务器解析
+dig  @202.106.0.20  www.baidu.com
+
 类型：
 1、主DNS服务器
 　　　　为客户端提供域名解析的主要区域，主DNS服务器宕机，会启用从DNS服务器提供服务。
@@ -110,6 +143,24 @@ named-checkconf，named-checkzone，named-compilezone
 　　4、转发服务器
 　　　　当DNS服务器的解析区域（包括缓存）中无法为当前的请求提供权威应答时，将请求转发至其它的DNS服务器，此时本地DNS服务器就是转发服务器。
     Forwarding occurs only on those queries for which the server is not authoritative and does not have the answer in its cache.
+    5，权威
+    6，递归（非递归，那就做权威）
+    
+    又分zone运行，这是一个层级覆盖关系
+    zone 区声明是配置文件中最重要的部分。Zone 语句的格式为：
+zone "zone-name" IN {
+         type 子句;
+         file 子句;
+         其他子句；
+}；
+下面列出一些常用的 zone 配置子句。
+子句	说明
+type master/slave/hint/forward	说明一个区的类型。master：说明一个区为主域名服务器；slave说明一个区为辅助域名服务器；hint：说明一个区为根服务器的线索；forward：说明一个区为转发区
+file “filename”	说明一个区的域信息源数据库信息文件名
+
+一个域的 DNS 数据库是由这个域的主域名服务器的管理员所维护的文本文件的集合。这些文件经常被称为区文件，区文件定义了一个区的域名信息。
+每个区文件都是由若干个资源记录（RR，resource records）和分析器指令所组成
+    
     
     DNS的主要作用是进行主机名的解析。解析：根据用户提供一种名称，去查询解析库，以得到另一种名称。 正向解析与反向解析使用不同的解析库。
 
@@ -117,11 +168,24 @@ named-checkconf，named-checkzone，named-compilezone
 
 A：Address地址 IPv4
 AAAA：Address地址 IPv6
-NS：Name Server域名服务器
-SOA：Start of Authority授权状态
+NS：Name Server域名服务器 及授权子域
+SOA：Start of Authority授权状态  标识一个区的开始
 MX：Mail Exchanger邮件交换
 CNAME：Canonical Name规范名
 PTR：Pointer指针
+
+SOA RR 应该放在最前面
+通常 NS RR 紧跟在 SOA RR 之后
+其他记录的顺序无关紧要
+
+zone（区域）：
+DNS区域(ZONE)：DNS域名空间中连续的树，将域名空间按照需要划分为若干较小的管理单位。
+在zone里指定master，slave，以及是否转发
+
+栗子：
+在baidu中设置一个DNS服务器，这个DNS服务器将完成域名空间"baidu.com"下的域名解析工作，我们称之为一个区域(ZONE)。
+在fzu中设置一个DNS服务器，这个服务器完成域名空间"fzu.edu.cn"下的域名解析工作，我们称之为一个区域(ZONE)。
+ps:在DNS服务器中，必须先建立区域，在区域中建立子域，在区域或者子域中添加主机记录。存储区域数据的文件，称为区域文件。一台DNS服务器上可以存放多个区域文件，同一个区域文件也可以存放在多台DNS服务器上。
 
 --------------------------------------------------------------------------------------------
 dns实际使用中，即用递归查询，又使用迭代查询
