@@ -445,3 +445,8 @@ Garbage collection - It has to do with returning unused memory back to the syste
 使用，nscd（Name Service Cache Daemon）是一种能够缓存 passwd、group、hosts 的本地缓存服务，分别对应三个源 /etc/passwd、/etc/hosts、/etc/resolv.conf。
 其最为明显的作用就是加快 DNS 解析速度，在接口调用频繁的内网环境建议开启。
 
+
+--------------------------------------------------------------------------------------------------
+tips:
+
+DNSSEC,   about, /etc/named.root.key
