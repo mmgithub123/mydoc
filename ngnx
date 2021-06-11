@@ -1,0 +1,57 @@
+
+在 nginx 的配置文件中，大概分为几个区域：events {}、http {}、和没有被 {}包裹的区域。而 http {} 中还有 server {}，以及 server {} 中的 location {}。结构如下：
+
+
+
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    ...
+
+    server {
+        ...
+
+        location {
+            ...
+        }
+    }
+
+    server {
+        ...
+    }
+}
+
+
+没有被 {} 包裹的部分为全局配置，如 worker_processes 1; 设置工作进程（子进程）数为 1
+
+events {} 为 nginx 连接配置的模块，如 worker_connections 1024; 设置每一个子进程最大允许连接 1024 个连接
+
+http {} 为 nginx http 核心配置模块
+
+server {} 为虚拟主机配置模块，包括监听端口、监听域名等
+
+location {} URI 匹配
+
+
+
+
+支持websocket协议：
+https://www.nginx.com/blog/websocket-nginx/
+HTTP的Upgrade协议头机制用于将连接从HTTP连接升级到WebSocket连接，Upgrade机制使用了Upgrade协议头和Connection协议头。
+反向代理服务器在支持WebSocket协议方面面临着一些挑战。挑战之一是WebSocket是一个逐段转发（hop-by-hop）协议，因此当代理服务器拦截到来自客户端的Upgrade请求时
+，代理服务器需要将自己的Upgrade请求发送给后端服务器，包括适合的请求头。而且，由于WebSocket连接是长连接，与传统的HTTP端连接截然不同，
+故反向代理服务器还需要允许这些连接处于打开（Open）状态，而不能因为其空闲就关闭了连接。
+
+Nginx通过在客户端和后端服务器之间建立隧道来支持WebSockets通信。为了让Nginx可以将来自客户端的Upgrade请求发送到后端服务器，Upgrade和Connection的头信息必须被显式的设置。如下所示：
+location /wsapp/ {
+    proxy_pass http://wsbackend;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+}
+
+一旦我们完成以上设置，Nginx就可以处理WebSocket连接了。
