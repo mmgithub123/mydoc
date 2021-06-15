@@ -1,6 +1,9 @@
 指定config
 kubectl --kubeconfig=kube/config get ingress
 
+查看service：
+kubectl --kubeconfig=kube/config describe services xxx-service
+
 kubectl get pods
 
 kubectl describe pod pod-name -o wide
