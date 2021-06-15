@@ -1,3 +1,6 @@
+指定config
+kubectl --kubeconfig=kube/config get ingress
+
 kubectl get pods
 
 kubectl describe pod pod-name -o wide
@@ -12,3 +15,40 @@ kubectl  exec -it pod-name -n namespace-name bash(sh or /bin/sh or /bin/bash)
 
 查看yaml
 kubectl get pod -n namespace-name -o yaml
+
+
+----------------------------------------------------------------------------------------------
+监控报警
+
+pod状态：
+Pending，  Running ， Succeeded ， Failed，Unknown
+
+容器状态：
+Waiting, Running, and Terminated
+
+pod条件：
+PodScheduled: the Pod has been scheduled to a node.
+ContainersReady: all containers in the Pod are ready.
+Initialized: all init containers have started successfully.
+Ready: the Pod is able to serve requests and should be added to the load balancing pools of all matching Services.
+
+
+Google在“SRE Handbook”中以“四个黄金信号”的概念为我们提供了一个论述：
+Latency — 延迟
+Traffic — 流量
+Errors — 错误数
+Saturation — 饱和度
+
+Tom Wilkie解释RED方法为：
+Rate：每秒的请求数。
+Errors：失败的那些请求的数量。
+Duration：这些请求所花费的时间。
+USE方法用于资源，RED方法用于服务  — Tom Wilkie
+
+
+cadvisor
+metric-server
+kube-state-metrics
+node-exporter
+
+
