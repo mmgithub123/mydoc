@@ -57,7 +57,39 @@ node-exporter
 
 
 ---------------------------------------------------------------------------------------------------------------
-指标：
+指标：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
+计时器，计数器
+
+指标，周期，持续时间
+
+端口存活
+进程存活
+http状态码
+主机存活（ping）
+
+1，cpu使用大于80%，100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80，CPU load is > 80%
+2，cpu st 大于10%，avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10，
+CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.
+
+内存利用率超过80%
+内存压力，rate(node_vmstat_pgmajfault[1m]) > 1000，The node is under heavy memory pressure. High rate of major page faults
+
+入口流量太大，sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100，Host network interfaces are probably receiving too much data (> 100 MB/s)
+出口流量太大，sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100，Host network interfaces are probably sending too much data (> 100 MB/s)
+
+1，磁盘读流量太大，sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50，Disk is probably reading too much data (> 50 MB/s)
+2，磁盘写流量太大，sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50，Disk is probably writing too much data (> 50 MB/s)
+3，磁盘满了，
+(node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0，Disk is almost full (< 10% left)
+4，inodes满了，
+node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 
+and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0
+Disk is almost running out of available inodes (< 10% left)
+5，磁盘读延迟，rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0
+Disk latency is growing (read operations > 100ms)
+6，磁盘写延迟，rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0
+Disk latency is growing (write operations > 100ms)
+7，
 
 Google在“SRE Handbook”中以“四个黄金信号”的概念为我们提供了一个论述：
 Latency — 延迟
@@ -189,3 +221,15 @@ CPU使用率 	原始值 >= 80%	持续3个周期 则告警 每5分钟告警一次
 4. 是否有完备技术服务流程
   1. 值班人员
   2. 故障处理流程指南
+  
+  
+  ------------------------------------------------------------------------------------------------------------
+  背景知识：
+  https://gridpane.com/kb/an-introduction-to-cpu-steal-i-o-wait-and-the-top-command/
+Steal “st”
+Here you can see there’s no steal, but sometimes neighbours on your server can potentially steal a lot of your CPU – sometimes over 50% or more.
+I/O Wait “wa”
+If this is high then the CPU is waiting on the IO/drives. You can exit top and install run iotop to see which process is causing the most I/O utilization on your server.
+To exit top hit Ctrl+C.
+You can install iotop with:
+apt install iotop
