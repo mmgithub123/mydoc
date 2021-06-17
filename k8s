@@ -54,7 +54,13 @@ metric-server
 kube-state-metrics
 node-exporter
 
-
+--------------------------------------------------------------------------------------------------------------
+实施：
+https://www.cnblogs.com/xzkzzz/p/10208115.html   得创建PV PVC
+https://phoenixnap.com/kb/prometheus-kubernetes-monitoring
+https://devopscube.com/setup-prometheus-monitoring-on-kubernetes/   
+得注意权限
+剩下基本是apply  yaml
 
 ---------------------------------------------------------------------------------------------------------------
 指标：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
