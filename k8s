@@ -59,6 +59,12 @@ metric-server         ，focused on implementing the resource metrics API: CPU, 
 kube-state-metrics    ，focused on orchestration metadata: deployment, pod, replica status, etc.
 node-exporter         ，node
 
+对于集群的监控一般我们需要考虑以下几个方面：
+
+Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指标
+内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns 等组件的详细运行状态
+编排级的 metrics：比如 Deployment 的状态、资源请求、调度和 API 延迟等数据指标
+
 --------------------------------------------------------------------------------------------------------------
 实施：
 https://www.cnblogs.com/xzkzzz/p/10208115.html   得创建PV PVC
@@ -66,6 +72,8 @@ https://phoenixnap.com/kb/prometheus-kubernetes-monitoring
 https://devopscube.com/setup-prometheus-monitoring-on-kubernetes/   
 得注意权限
 剩下基本是apply  yaml
+
+
 
 ---------------------------------------------------------------------------------------------------------------
 指标：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
