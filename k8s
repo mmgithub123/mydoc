@@ -10,6 +10,9 @@ describe可以查看每一资源的详细创建信息：
 kubectl --kubeconfig= describe pvc prometheus  
 kubectl describe pod pod-name -o wide
 
+端口代理：
+kubectl --kubeconfig=kube/config port-forward prometheus-75d9c55b77-qqs48 --address 0.0.0.0  8080:9090  -n kube-ops
+
 查看pod日志
 kubectl logs pod-name (-n namespace-name)
 
