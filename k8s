@@ -51,10 +51,10 @@ Duration：这些请求所花费的时间。
 USE方法用于资源，RED方法用于服务  — Tom Wilkie
 
 
-cadvisor
-metric-server
-kube-state-metrics
-node-exporter
+cadvisor              ，kubelet container
+metric-server         ，focused on implementing the resource metrics API: CPU, file descriptors, memory, request latencies, etc.
+kube-state-metrics    ，focused on orchestration metadata: deployment, pod, replica status, etc.
+node-exporter         ，node
 
 --------------------------------------------------------------------------------------------------------------
 实施：
