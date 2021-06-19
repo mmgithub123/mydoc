@@ -1,2 +1,2 @@
-# yummy
-yummy project
+
+doc project
