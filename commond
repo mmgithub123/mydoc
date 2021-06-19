@@ -14,3 +14,8 @@ awk '{print $1}' A | paste - B
 其中，- 表示从标准输入读。
 默认分隔符为tab，可以使用-d选项修改为任意分隔符（比如空格）：
 awk '{print $1}' A | paste -d' ' file1 file2
+
+
+
+curl 发送post请求：
+curl -H "Content-Type: application/json" -X POST -d '{ "msg":"OK!" }' "http://192.168.0.1:8001/test"
