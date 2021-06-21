@@ -67,6 +67,13 @@ Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指�
 
 --------------------------------------------------------------------------------------------------------------
 实施：
+
+告警级别：
+critical  紧急
+error     重要
+warn      次要
+info      提示
+
 https://www.cnblogs.com/xzkzzz/p/10208115.html   得创建PV PVC
 https://phoenixnap.com/kb/prometheus-kubernetes-monitoring
 https://devopscube.com/setup-prometheus-monitoring-on-kubernetes/   
