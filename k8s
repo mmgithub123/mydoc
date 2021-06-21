@@ -28,6 +28,16 @@ kubectl get pod -n namespace-name -o yaml
 ----------------------------------------------------------------------------------------------
 监控报警
 
+JobDown
+对应Prometheus指标收集的4个Job、分别为kube-state-metrics、kube-node-exporter、kube-node-kubelet、kube-node-cadvisor，一旦哪个Job有问题，则会进行告警。
+PodDown
+当处于Running状态的pod停止时，则会进行告警。
+PodReady
+在Pod重新调度后，虽然Pod处于Running状态，由于此时正在重启，Ready为0，只有当readiness探针探测正常后，Ready为1，才会正式接受请求；因此Ready长时间为0时，说明Pod启动有问题，需要进行告警。
+PodRestart
+当Pod健康检查不成功，Pod会进行不断的重启，一旦超过一定的次数，则说明Pod有问题，此时需要进行告警。
+
+
 pod状态：
 Pending，  Running ， Succeeded ， Failed，Unknown
 
@@ -59,6 +69,18 @@ metric-server         ，focused on implementing the resource metrics API: CPU, 
 kube-state-metrics    ，focused on orchestration metadata: deployment, pod, replica status, etc.
 node-exporter         ，node
 
+cAdvisor is an open source container resource usage and performance analysis agent. 
+It is purpose-built for containers and supports Docker containers natively. 
+In Kubernetes, cAdvisor runs as part of the Kubelet binary. So, any aggregator retrieving “node local” and
+ Docker metrics will directly scrape the Kubelet Prometheus endpoints.
+
+Kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about 
+the state of the objects such as deployments, nodes, and pods. It is important to note that kube-state-metrics is 
+just a metrics endpoint. Other entities need to scrape it and provide long term storage (e.g., the Prometheus server).
+
+Metrics-server is a cluster-wide aggregator of resource usage data. The metrics server will only present 
+the last data points and it’s not in charge of long term storage.
+
 对于集群的监控一般我们需要考虑以下几个方面：
 
 Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指标
@@ -66,7 +88,17 @@ Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指�
 编排级的 metrics：比如 Deployment 的状态、资源请求、调度和 API 延迟等数据指标
 
 --------------------------------------------------------------------------------------------------------------
-实施：
+altermanager：
+
+· Inactive：这里什么都没有发生。
+· Pending：已触发阈值，但未满足告警持续时间（即rule中的for字段）
+· Firing：已触发阈值且满足告警持续时间。警报发送到Notification Pipeline，经过处理，发送给接受者这样目的是多次判断失败才发告警，减少邮件。
+  resolved
+
+告警处理：
+分组
+抑制
+静默
 
 告警级别：
 critical  紧急
@@ -74,14 +106,29 @@ error     重要
 warn      次要
 info      提示
 
+------------------------------------------------------------------------------------------------------------
+实施：
+prometheus触发一条告警的过程：
+prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑制|静默--->媒体类型--->邮件|钉钉|微信等。
+
+https://zhuanlan.zhihu.com/p/372271667
+https://www.infoq.cn/article/Uj12kNwoRCwG0kke8Zfv
+https://mp.weixin.qq.com/s?__biz=MzkwOTIxNDQ3OA==&mid=2247532438&idx=1&sn=bb332ead7ab472cc49bcb13658817b49&source=41#wechat_redirect
+
 https://www.cnblogs.com/xzkzzz/p/10208115.html   得创建PV PVC
 https://phoenixnap.com/kb/prometheus-kubernetes-monitoring
 https://devopscube.com/setup-prometheus-monitoring-on-kubernetes/   
 得注意权限
 剩下基本是apply  yaml
 
+报警通知详细设置label：
+https://www.bonial.com/tech-blog/routing-prometheus-alerts-in-multi-tenant-kubernetes-clusters/
+https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and-one-to-many-vector-matches  语法
+
 promethues reload:
 curl -XPOST http://10.88.153.80:32035/-/reload
+
+
 
 Counter
 This represents a cumulative metric that only increases over time, like the number of requests to an endpoint.
@@ -97,7 +144,11 @@ It also provides a sum of all observed values.
 A histogram with a base metric name of exposes multiple time series during a scrape:
 
 ---------------------------------------------------------------------------------------------------------------
-指标：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
+指标：
+
+报警规则：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
+         https://help.aliyun.com/document_detail/176180.html?spm=a2c4g.11186623.4.5.717e3eebxbWsZy#title-dcc-mv9-w33
+
 计时器，计数器
 
 指标，周期，持续时间
