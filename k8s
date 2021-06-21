@@ -73,7 +73,21 @@ https://devopscube.com/setup-prometheus-monitoring-on-kubernetes/
 得注意权限
 剩下基本是apply  yaml
 
+promethues reload:
+curl -XPOST http://10.88.153.80:32035/-/reload
 
+Counter
+This represents a cumulative metric that only increases over time, like the number of requests to an endpoint.
+Note: instead of using Counter to instrument decreasing values, use Gauges.
+
+Gauge
+Gauges are instantaneous measurements of a value. They can be arbitrary values which will be recorded.
+Gauges represent a random value that can increase and decrease randomly such as the load of your system.
+
+Histogram
+A histogram samples observations (usually things like request durations or response sizes) and counts them in configurable buckets. 
+It also provides a sum of all observed values.
+A histogram with a base metric name of exposes multiple time series during a scrape:
 
 ---------------------------------------------------------------------------------------------------------------
 指标：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
