@@ -35,3 +35,16 @@ groupadd -g 1000 username  添加组
 useradd -u 1000 -g 1000 username  添加用户
 passwd username  设置密码
 
+
+vim整块移动：
+先在~/.vimrc文件中设置一下参数，set shiftwidth=4。
+
+之后进入vim中，按下v，进行选择移动的整段代码，是连续的代码段。之后进行可以  向左（向右）移动。
+
+shift+> (向右缩进) ，shift+<(向左缩进)。
+
+:10,100>
+第10行至第100行缩进
+:20,80<
+第20行至第80行反缩进
+
