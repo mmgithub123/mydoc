@@ -168,6 +168,9 @@ info      提示
 prometheus触发一条告警的过程：
 prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑制|静默--->媒体类型--->邮件|钉钉|微信等。
 
+踩坑与最佳实践：
+https://blog.csdn.net/mingongge/article/details/89507202
+
 https://zhuanlan.zhihu.com/p/372271667
 https://www.infoq.cn/article/Uj12kNwoRCwG0kke8Zfv
 https://mp.weixin.qq.com/s?__biz=MzkwOTIxNDQ3OA==&mid=2247532438&idx=1&sn=bb332ead7ab472cc49bcb13658817b49&source=41#wechat_redirect
