@@ -129,6 +129,14 @@ promethues reload:
 curl -XPOST http://10.88.153.80:32035/-/reload
 
 服务发现：
+官网：https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config
+kubernetes_sd_configs
+# The API server addresses. If left empty, Prometheus is assumed to run inside
+# of the cluster and will discover API servers automatically and use the pod's
+# CA certificate and bearer token file at /var/run/secrets/kubernetes.io/serviceaccount/.
+[ api_server: <host> ]
+To discover targets from another Kubernetes cluster, you need to pass the api_server URL as well as TLS certificate or bearer token files for Prometheus to authenticate.
+
 kubernetes_sd_configs表示基于Kubernetes进行服务发现，
 而其中的role字段可为pod，node, service, endpoints, ingress
 Prometheus会创建Kubernetes Client对role中指定的资源对象进行监听。
