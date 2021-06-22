@@ -19,3 +19,14 @@ awk '{print $1}' A | paste -d' ' file1 file2
 
 curl 发送post请求：
 curl -H "Content-Type: application/json" -X POST -d '{ "msg":"OK!" }' "http://192.168.0.1:8001/test"
+
+
+
+用户：
+.用户在系统中的存储方式
+/etc/passwd 用户的信息文件。信息格式为“用户名称：密码：uid：gid：说明：家目录：shell”
+/etc/group 用户组的信息文件。信息格式为"组名称：组密码：组id：组成员"
+/etc/shadows 认证信息文件
+/etc/skel/.* 默认开启shell的配置，用户的骨文件
+/home/username 用户的家目录
+
