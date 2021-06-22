@@ -128,6 +128,23 @@ https://prometheus.io/docs/prometheus/latest/querying/operators/#many-to-one-and
 promethues reload:
 curl -XPOST http://10.88.153.80:32035/-/reload
 
+服务发现：
+kubernetes_sd_configs表示基于Kubernetes进行服务发现，
+而其中的role字段可为pod，node, service, endpoints, ingress
+Prometheus会创建Kubernetes Client对role中指定的资源对象进行监听。
+一般Prometheus部署在Kubernetes集群中的话，Prometheus可以直接利用指定的Service Account对Kubernetes API进行访问。
+若Prometheus在Kubernetes集群之外，则kubernetes_sd_configs还需指定监控集群的API Server的URL以及相关的认证信息，从而能够创建对应集群的Client。
+和Kubernetes内置的各种Controller类似，当目标资源对象为Pod时，Prometheus会对Kubernetes中的Pod进行List & Watch。每当集群中新增一个Pod，Prometheus就会对其进行处理，
+根据其配置创建一个target group。之后，Prometheus会遍历Pod中的每个Container：若Container没有暴露端口，则将一个Container作为一个target并将该target的__address__直接设置为Pod的IP地址；
+若Container暴露了一个或多个端口，则将每个端口设置为一个target且target的__address设置为Pod IP加对应端口的组合。如上文所述，一个target group中的targets会共享某些labels，
+当target group对应的是一个pod时，Prometheus会将Pod的基本信息作为共享labels。例如：__meta_kubernetes_namespace对应Pod所在的namespace，__meta_kubernetes_pod_name对应pod name，
+以及pod的ip，labels和annotations都会作为共享labels写入
+
+已知targets本质上是一系列的labels，因此我们可以根据labels是否符合某些规则实现对targets的过滤，在Prometheus中，这一机制叫做relabel。
+一个抓取对象，即target，在Prometheus是用一系列labels来描述的，全局的配置文件描述了某些targets的公共配置，
+而Kubernetes等系统的服务发现能力则为Prometheus提供了targets的大部分配置信息。最终，我们可以通过relabel机制对targets对象进行修改过滤，
+从而实现对于有效target的抓取。而对于target的抓取，本质上是通过target中的__scheme__，__address__和__metrcis_path__这几个label，
+拼凑出一个URL，比如http://10.32.0.2/metrics，对该URL发起一个GET请求，获取监控数据
 
 
 Counter
