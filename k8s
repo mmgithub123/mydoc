@@ -1,3 +1,6 @@
+中文文档：https://kubernetes.io/zh/docs/tasks/configure-pod-container/configure-pod-configmap/
+命令手册：https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#get
+
 指定config
 kubectl --kubeconfig=kube/config get ingress
 
