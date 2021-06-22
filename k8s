@@ -26,7 +26,58 @@ kubectl  exec -it pod-name -n namespace-name bash(sh or /bin/sh or /bin/bash)
 
 查看yaml
 kubectl get pod -n namespace-name -o yaml
+-------------------------------------------------------------------------------------------------
+configmap:
 
+基于文件创建：
+将 ConfigMap 数据添加到一个卷中
+如基于文件创建 ConfigMap 中所述，当你使用 --from-file 创建 ConfigMap 时，文件名成为存储在 ConfigMap 的 data 部分中的键， 文件内容成为键对应的值。
+
+本节中的示例引用了一个名为 special-config 的 ConfigMap，如下所示：
+
+configmap/configmap-multikeys.yaml Copy configmap/configmap-multikeys.yaml to clipboard
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: special-config
+  namespace: default
+data:
+  SPECIAL_LEVEL: very
+  SPECIAL_TYPE: charm
+创建 ConfigMap:
+
+kubectl create -f https://kubernetes.io/examples/configmap/configmap-multikeys.yaml
+使用存储在 ConfigMap 中的数据填充数据卷
+在 Pod 规约的 volumes 部分下添加 ConfigMap 名称。 这会将 ConfigMap 数据添加到指定为 volumeMounts.mountPath 的目录（在本例中为 /etc/config）。 command 部分引用存储在 ConfigMap 中的 special.level。
+
+pods/pod-configmap-volume.yaml Copy pods/pod-configmap-volume.yaml to clipboard
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: k8s.gcr.io/busybox
+      command: [ "/bin/sh", "-c", "ls /etc/config/" ]
+      volumeMounts:
+      - name: config-volume
+        mountPath: /etc/config
+  volumes:
+    - name: config-volume
+      configMap:
+        # Provide the name of the ConfigMap containing the files you want
+        # to add to the container
+        name: special-config
+  restartPolicy: Never
+创建 Pod:
+
+kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-volume.yaml
+Pod 运行时，命令 ls /etc/config/ 产生下面的输出：
+
+SPECIAL_LEVEL
+SPECIAL_TYPE
+注意： 如果在 /etc/config/ 目录中有一些文件，它们将被删除。
 
 ----------------------------------------------------------------------------------------------
 监控报警
