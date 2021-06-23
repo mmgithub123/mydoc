@@ -174,6 +174,10 @@ prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑�
          https://github.com/infinityworks/prometheus-example-queries
          https://gitlab.com/gitlab-com/runbooks/blob/0946602d55a442c6ca5ce407877c267459d8404c/rules/node.yml
          https://github.com/sapcc/helm-charts/blob/a5ba80fd660aae71770fbf7c9625ad6fb5b2887d/prometheus-rules/prometheus-kubernetes-rules/alerts/node.alerts.tpl
+         https://github.com/jpweber/prometheus-alert-rules
+     
+label使用：
+https://www.weave.works/blog/labels-in-prometheus-alerts-think-twice-before-using-them
 
 踩坑与最佳实践：
 https://blog.csdn.net/mingongge/article/details/89507202
