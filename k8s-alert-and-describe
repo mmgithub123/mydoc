@@ -1,5 +1,8 @@
 function mean:
-rate()函数：获取指定时间段的平均量
+rate()函数：获取指定时间段的平均量,(last值-first值)/时间差s
+
+predict_linear(),对曲线变化速率进行计算，起到一定的预测作用。比如当前这1个小时的磁盘可用率急剧下降，这种情况可能导致磁盘很快被写满，这时可以使用该函数，
+用当前1小时的数据去预测未来几个小时的状态，实现提前告警predict_linear( node_filesystem_free_bytes{mountpoint="/"}[1h],4*3600 ) < 0   #根据最近1小时的数据计算未来4小时的磁盘使用情况，负数就会报警
 
 
 metric mean:
@@ -23,9 +26,11 @@ The container_memory_working_set_bytes is being used for OoM decisions because i
 that can be evicted in memory pressure scenarios.
 So, if the container_memory_working_set_bytes is increased to the limit, it will lead to oomkill.
 
+5，kubelet_volume_stats_available_bytes   剩余容量
 
 
 
+报警项：
 1，KubernetesNodeReady
 kube_node_status_condition{condition="Ready",status="true"} == 0
   
@@ -69,7 +74,10 @@ Instead, I can do something like time() - container_last_seen{name=my-container}
 
 7，ContainerMemoryUsage
 (sum by(instance, name, pod) (container_memory_working_set_bytes) / sum by(instance, name, pod) (container_spec_memory_limit_bytes > 0) * 100) > 80
-使用内存占limit内存大于80%v
+使用内存占limit内存大于80%
+
+8，KubernetesVolumeFullInFourDays
+ predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0
 
 
 
