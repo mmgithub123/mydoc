@@ -1,3 +1,31 @@
+function mean:
+rate()函数：获取指定时间段的平均量
+
+
+metric mean:
+1，container_cpu_usage_seconds_total	
+counter	
+秒数
+该容器服务针对每个CPU累计消耗的CPU时间。如果有多个CPU，则总的CPU时间需要把各个CPU耗费的时间相加
+
+2，container_last_seen
+The container_last_seen metric enables you to query to see if the last time a metric was sent was more that X seconds ago.
+
+
+3，
+container_spec_memory_limit_bytes： 是分配给Pod的内存配额 有等于0的情况
+
+
+4，container_memory_working_set_bytes
+the amount of working set memory and it includes recently accessed memory, dirty memory, and kernel memory. 
+Therefore, Working set is (lesser than or equal to) </= "usage".
+The container_memory_working_set_bytes is being used for OoM decisions because it excludes cached data (Linux Page Cache)
+that can be evicted in memory pressure scenarios.
+So, if the container_memory_working_set_bytes is increased to the limit, it will lead to oomkill.
+
+
+
+
 1，KubernetesNodeReady
 kube_node_status_condition{condition="Ready",status="true"} == 0
   
@@ -35,10 +63,13 @@ sending metrics for that container. The container_last_seen metric enables you t
 E.g. if I just did count(some_cadvisor_metric{name=my-container}), it would continue to return 1 even after the container is gone.
 Instead, I can do something like time() - container_last_seen{name=my-container} > 30 to see if the container has been gone a while.
 
+6,ContainerCpuUsage
+(sum by(instance, name, pod) (rate(container_cpu_usage_seconds_total[3m])) * 100) > 80
+3分钟容器使用CPU时间平均量，按instance, name, pod分组求和，×100后大于80
 
-
-
-
+7，ContainerMemoryUsage
+(sum by(instance, name, pod) (container_memory_working_set_bytes) / sum by(instance, name, pod) (container_spec_memory_limit_bytes > 0) * 100) > 80
+使用内存占limit内存大于80%
 
 
 
