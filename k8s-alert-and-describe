@@ -69,7 +69,7 @@ Instead, I can do something like time() - container_last_seen{name=my-container}
 
 7，ContainerMemoryUsage
 (sum by(instance, name, pod) (container_memory_working_set_bytes) / sum by(instance, name, pod) (container_spec_memory_limit_bytes > 0) * 100) > 80
-使用内存占limit内存大于80%
+使用内存占limit内存大于80%v
 
 
 
