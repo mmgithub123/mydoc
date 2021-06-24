@@ -1,0 +1,48 @@
+1，KubernetesNodeReady
+kube_node_status_condition{condition="Ready",status="true"} == 0
+  
+The conditions field describes the status of all Running nodes. Examples of conditions include:
+
+Node Condition	         Description
+Ready	       True        if the node is healthy and ready to accept pods, False if the node is not healthy and is not accepting pods, and Unknown
+                         if the node controller has not heard from the node in the last node-monitor-grace-period (default is 40 seconds)
+DiskPressure	True       if pressure exists on the disk size--that is, if the disk capacity is low; otherwise False
+MemoryPressure	True     if pressure exists on the node memory--that is, if the node memory is low; otherwise False
+PIDPressure	   True      if pressure exists on the processes—that is, if there are too many processes on the node; otherwise False
+NetworkUnavailable	True if the network for the node is not correctly configured, otherwise False
+
+If the Status of the Ready condition remains Unknown or False for longer than the pod-eviction-timeout (an argument passed to the kube-controller-manager), 
+then all the Pods on the node are scheduled for deletion by the node controller. The default eviction timeout duration is five minutes. 
+
+
+
+2，KubernetesPodNotHealthy
+min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[15m:1m]) > 0
+
+pending-》waiting，containercreating-》running-》crashloopbackoff，unknow，terminating，error-》failed，succeed
+
+
+3,KubeletTooManyPods
+
+
+4, KubernetesMemoryPressure
+
+
+5,ContainerKilled
+time() - container_last_seen > 60
+If you query prometheus for the existence of a metric, it will report stale values for some time after cAdvisor has stopped 
+sending metrics for that container. The container_last_seen metric enables you to query to see if the last time a metric was sent was more that X seconds ago.
+E.g. if I just did count(some_cadvisor_metric{name=my-container}), it would continue to return 1 even after the container is gone.
+Instead, I can do something like time() - container_last_seen{name=my-container} > 30 to see if the container has been gone a while.
+
+
+
+
+
+
+
+
+
+
+
+
