@@ -78,6 +78,7 @@ Instead, I can do something like time() - container_last_seen{name=my-container}
 
 8，KubernetesVolumeFullInFourDays
  predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0
+ 用6小时的剩余容量趋势预测，未来4天剩余容量情况
 
 
 
