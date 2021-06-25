@@ -1,6 +1,20 @@
 中文文档：https://kubernetes.io/zh/docs/tasks/configure-pod-container/configure-pod-configmap/
 命令手册：https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#get
 
+kubectl config
+查看当前cluster集群环境
+kubectl config  current-context
+
+查看configfile
+kubectl config view
+
+查看全部上下文
+kubectl config    get-contexts
+
+切换上下文
+kubectl config use-context
+
+
 指定config
 kubectl --kubeconfig=kube/config get ingress
 
