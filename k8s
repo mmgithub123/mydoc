@@ -21,6 +21,10 @@ kubectl --kubeconfig=kube/config get ingress
 查看service：
 kubectl --kubeconfig=kube/config describe services xxx-service
 
+
+删除pod
+kubectl delete -f propod.yaml
+
 kubectl get pods
 
 describe可以查看每一资源的详细创建信息：
