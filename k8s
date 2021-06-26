@@ -730,6 +730,106 @@ CPU使用率 	原始值 >= 80%	持续3个周期 则告警 每5分钟告警一次
   2. 故障处理流程指南
   
   
+  -----------------------------------------------------------------------------------------------------------------
+  交易流程业务监控
+业务运行看板
+用户看板
+1. 新注册用户数曲线图
+Select count(id) from crm where create_time between date_sub(now(),interval 2 minute) and now()
+
+
+订单看板
+1. 各渠道新最近两分钟新订单，和历史同期比，多了还是少了，振幅超过15%，告警
+select case origin  when 1 then 'IOS' when 2 then '安卓' when 3 then '小程序' else '其他' end origin,count(id) from id  where create_time between date_sub(now(),interval 2 minute) and now()  group by origin 
+
+2. 新支付量，和历史同期比，多了还是少了，振幅超过15%，告警
+select case origin  when 1 then 'IOS' when 2 then '安卓' when 3 then '小程序' else '其他' end origin,count(id) from id  where time between date_sub(now(),interval 2 minute) and now() and status = 2 group by origin
+
+3. 最近2分钟，新进制作订单数
+select count(id) from e where create_time between date_sub(now(),interval 2 minute) and now()
+
+4. 配送订单数
+select count(id) from t_ where create_time  between date_sub(now(),interval 2 minute) and now()
+
+5、各未完成状态订单今日累计值
+select case status  when 10 then '已新建' when 20 then '已提交商家' when 30 then '已取餐' when 40 then '已取消', when 50 then '已完成' else '其他' end origin,count(id) from t where create_time > date(now()) group by status
+
+店铺看板：
+待收货/已收货门店数：
+select count( DISTINCT code) from t WHERE create_time between date_sub(now(),interval 1 day) and now() and type = 0
+
+解冻单总数/完成数量：
+SELECT count(id) from t_ where create_time between date_sub(now(),interval 1 day) and now()  
+ 
+SELECT count(id) from t where create_time between date_sub(now(),interval 1 day) and now()  and `status` = 3 
+
+开业门店数量/处于营业中的门店数量（结合营业时间）
+select count(*) as '已开业门店数量'
+from t_
+where status in (1, 2);
+
+select count(*) as '处于营业中的门店数量'
+from t_ b 
+inner join t_ o on b.s_code = o.sde
+where b.status in (1, 2)
+and o.fo= 2
+and o.ce is not null;
+
+上班人数（已打上班卡，未打下班卡的人数）
+实际上班人数
+select count(distinct `e`) from `t_` where `wor = 1
+应到人数
+select count(distinct e） from t_ where start_time_ <= now() and end_time_ >= now()
+
+关键接口性能指标 SLA  RT 
+  
+1. 首页
+  - 定位门店：
+  - 动态订单：
+  - 扫码点餐：
+2. 菜单
+  - 菜单列表：
+  - 商品详情：
+  - 套餐详情：
+3. 购物车
+  - 购物车：
+  - 购物车优惠：
+4. 订单
+  - 确认订单：
+  - 创建订单：
+  - 订单列表：
+  - 订单详情：
+  - 取消订单：
+  - 催单：
+5.  支付
+  - 微信小程序支付：
+  - APP-微信支付：
+  - APP-支付宝支付：
+6. 登录
+  - 短信验证码登录：
+  - 本机号码一键登录：
+  - apple登录：
+  - 微信登录：
+  - 小程序授权登录：
+
+
+数据来源 --
+1. ros订单
+订单列表  
+          订单详情 
+          退货
+          取消订单
+2. ros接单
+     制作单列表 
+     制作详情 
+          制作标签详情 
+3. ros制作完成
+          制作完成  
+
+
+
+
+  
   ------------------------------------------------------------------------------------------------------------
   背景知识：
   https://gridpane.com/kb/an-introduction-to-cpu-steal-i-o-wait-and-the-top-command/
