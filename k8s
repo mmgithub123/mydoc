@@ -125,18 +125,39 @@ ContainersReady: all containers in the Pod are ready.
 Initialized: all init containers have started successfully.
 Ready: the Pod is able to serve requests and should be added to the load balancing pools of all matching Services.
 
+----------------------------------------------------------------------------------------------------------------------------
+The Four Golden Signals
+The USE Method 
+RED Method.
 
 Google在“SRE Handbook”中以“四个黄金信号”的概念为我们提供了一个论述：
-Latency — 延迟
-Traffic — 流量
-Errors — 错误数
-Saturation — 饱和度
+Latency — The time it takes to service a request
+Traffic — A measure of how much demand is being placed on your system
+Errors — The rate of requests that fail
+Saturation — How “full” your service is.
 
-Tom Wilkie解释RED方法为：
+RED方法为：
+Rate: The number of requests per second.
+Errors: The number of those requests that are failing.
+Duration: The amount of time those requests take.
+
+“The USE method is for resources and the RED method is for my services”
+— Tom Wilkie
 Rate：每秒的请求数。
 Errors：失败的那些请求的数量。
 Duration：这些请求所花费的时间。
 USE方法用于资源，RED方法用于服务  — Tom Wilkie
+
+use方法：
+utilization   利用效用
+Saturation — 饱和度
+Errors — 错误数
+Resource: all physical server functional components (CPUs, disks, busses, …)
+Utilization: the average time that the resource was busy servicing work
+Saturation: the degree to which the resource has extra work which it can’t service, often queued
+Errors: the count of error events
+
+
 
 
 cadvisor              ，kubelet container
@@ -178,7 +199,7 @@ altermanager：
 告警级别：
 critical  紧急
 error     重要
-warn      次要
+warning      次要
 info      提示
 
 ------------------------------------------------------------------------------------------------------------
@@ -550,15 +571,28 @@ https://github.com/prometheus/prometheus/blob/main/documentation/examples/promet
 Counter
 This represents a cumulative metric that only increases over time, like the number of requests to an endpoint.
 Note: instead of using Counter to instrument decreasing values, use Gauges.
+Counter
+Counter 用于累计值，例如 记录 请求次数、任务完成数、错误发生次数。
+一直增加，不会减少。
+重启进程后，会被重置。
+用add方法
 
 Gauge
 Gauges are instantaneous measurements of a value. They can be arbitrary values which will be recorded.
 Gauges represent a random value that can increase and decrease randomly such as the load of your system.
+Gauge
+Gauge 常规数值，例如 温度变化、内存使用变化。
+可变大，可变小。
+重启进程后，会被重置
+用set方法
 
 Histogram
 A histogram samples observations (usually things like request durations or response sizes) and counts them in configurable buckets. 
 It also provides a sum of all observed values.
 A histogram with a base metric name of exposes multiple time series during a scrape:
+Histogram 可以理解为柱状图的意思，常用于跟踪事件发生的规模，例如：请求耗时、响应大小。它特别之处是可以对记录的内容进行分组，提供 count 和 sum 全部值的功能。
+
+
 
 ---------------------------------------------------------------------------------------------------------------
 指标：
