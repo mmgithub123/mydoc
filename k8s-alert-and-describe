@@ -13,6 +13,8 @@ sum_over_time(range-vector): the sum of all values in the specified interval.
 count_over_time(range-vector): the count of all values in the specified interval.
 
 metric mean:
+一些指标表：https://lnsyyj.github.io/2019/05/27/prometheus-node-exporter-%E7%9B%91%E6%8E%A7%E9%A1%B9/
+
 1，container_cpu_usage_seconds_total	
 counter	
 秒数
@@ -35,7 +37,37 @@ So, if the container_memory_working_set_bytes is increased to the limit, it will
 
 5，kubelet_volume_stats_available_bytes   剩余容量
 
+6,node_cpu_seconds_total
 
+all the CPU time spent on every core for all 10 CPU modes. Those modes are: user, system, nice, idle, iowait, guest, guest_nice, steal, soft_irq and irq
+
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="idle"}
+1351820.79
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="iowait"}
+969.96
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="irq"}
+0
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="nice"}
+24.13
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="softirq"}
+8103.87
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="steal"}
+0
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="system"}
+19693.23
+node_cpu_seconds_total{cpu="0", instance="10.92.2.181:9100", job="node-exporter", mode="user"}
+
+7,node_memory_MemAvailable
+node_memory_MemAvailable=node_memory_MemFree + node_memory_Cached + node_memory_Buffers
+
+8,node_vmstat_oom_kill
+linux为了避免内存用尽,导致系统的卡死,会唤醒oom_killer,找出/proc/pid/oom_score值最大的进程将之kill掉,从而释放内存,来保证整个系统的的正常运行。
+
+9，node_vmstat_pgmajfault
+就是 /proc/vmstat pgmajfault  就是，启动到现在，一级页面错误数。
+就是虚拟内存不存在，得从磁盘swap交换，把页面读进内存。
+页面错误指当软件试图读取或写入标记为“不存在”的虚拟内存位置时发生的中断。页面错误记录了一个进程必须从硬盘上恢复的次数。
+页面错误是进程中当数据不在内存而必须从磁盘检索的次数。页面错误值从进程启动的时间开始累计。
 
 报警项：
 1，KubernetesNodeReady
@@ -94,9 +126,22 @@ Instead, I can do something like time() - container_last_seen{name=my-container}
  10，HostClockNotSynchronising
  min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16
  https://github.com/prometheus/node_exporter/pull/1850
+ 
+ 11,HostHighCpuLoad
+100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+idle 空闲模式很小 换句话说，CPU负载很大了
 
+12，HostCpuStealNoisyNeighbor
+avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10
+被偷cpu超过10%了
 
+13,HostOutOfMemory
+node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10 
+可用内存不足10%了
 
+14，HostMemoryUnderMemoryPressure
+ rate(node_vmstat_pgmajfault[1m]) > 1000
+ 平均1分钟已经有1000次从磁盘调虚拟内存了，说明内存压力大了
 
 
 
