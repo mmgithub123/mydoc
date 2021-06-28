@@ -215,6 +215,7 @@ prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑�
          https://github.com/sapcc/helm-charts/blob/a5ba80fd660aae71770fbf7c9625ad6fb5b2887d/prometheus-rules/prometheus-kubernetes-rules/alerts/node.alerts.tpl
          https://github.com/jpweber/prometheus-alert-rules
          https://github.com/prometheus/node_exporter/blob/v1.0.1/docs/node-mixin/alerts/alerts.libsonnet
+         https://github.com/giantswarm/prometheus/tree/master/helm/prometheus-chart/prometheus-alerts
      
 label使用：
 https://www.weave.works/blog/labels-in-prometheus-alerts-think-twice-before-using-them
