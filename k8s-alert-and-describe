@@ -2,8 +2,15 @@ function mean:
 rate()函数：获取指定时间段的平均量,(last值-first值)/时间差s
 
 predict_linear(),对曲线变化速率进行计算，起到一定的预测作用。比如当前这1个小时的磁盘可用率急剧下降，这种情况可能导致磁盘很快被写满，这时可以使用该函数，
-用当前1小时的数据去预测未来几个小时的状态，实现提前告警predict_linear( node_filesystem_free_bytes{mountpoint="/"}[1h],4*3600 ) < 0   #根据最近1小时的数据计算未来4小时的磁盘使用情况，负数就会报警
+用当前1小时的数据去预测未来几个小时的状态，实现提前告警predict_linear( node_filesystem_free_bytes{mountpoint="/"}[1h],4*3600 ) < 0   
+#根据最近1小时的数据计算未来4小时的磁盘使用情况，负数就会报警
 
+The following functions allow aggregating each series of a given range vector over time and return an instant vector with per-series aggregation results:
+avg_over_time(range-vector): the average value of all points in the specified interval.
+min_over_time(range-vector): the minimum value of all points in the specified interval.
+max_over_time(range-vector): the maximum value of all points in the specified interval.
+sum_over_time(range-vector): the sum of all values in the specified interval.
+count_over_time(range-vector): the count of all values in the specified interval.
 
 metric mean:
 1，container_cpu_usage_seconds_total	
@@ -79,6 +86,14 @@ Instead, I can do something like time() - container_last_seen{name=my-container}
 8，KubernetesVolumeFullInFourDays
  predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0
  用6小时的剩余容量趋势预测，未来4天剩余容量情况
+ 
+ 9，KubernetesApiClientErrors
+ (sum by(instance, job) (rate(rest_client_requests_total{code=~"(5).."}[1m])) / sum by(instance, job) (rate(rest_client_requests_total[1m]))) * 100 > 1
+ apiserver  http请求500的占比
+ 
+ 10，HostClockNotSynchronising
+ min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16
+ https://github.com/prometheus/node_exporter/pull/1850
 
 
 
