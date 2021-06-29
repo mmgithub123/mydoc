@@ -171,6 +171,11 @@ Errors are reported as node_network_receive_errs and node_network_transmit_errs.
 ）
 
 
+k8s  Requests and limits :
+CPU is specified as fractions of a CPU or core (down to 1/1000th) and memory is specified in bytes.
+you will be throttled if you exceed the CPU limit, and killed if you exceed the memory limit.
+
+
 
 cadvisor              ，kubelet container
 metric-server         ，focused on implementing the resource metrics API: CPU, file descriptors, memory, request latencies, etc.
@@ -186,6 +191,10 @@ Kube-state-metrics is a simple service that listens to the Kubernetes API server
 the state of the objects such as deployments, nodes, and pods. It is important to note that kube-state-metrics is 
 just a metrics endpoint. Other entities need to scrape it and provide long term storage (e.g., the Prometheus server).
 
+19 Kubernetes object types that kube-state-metrics tracks. Those objects are:
+CronJob,DaemonSet,Deployment,Job,LimitRange,Node
+PersistentVolume,PersistentVolumeClaim,Pod,ReplicaSet,ReplicationController,ResourceQuota,Service,StatefulSet,Namespace,Horizontal Pod Autoscaler,Endpoint,Secret,ConfigMap
+
 Metrics-server is a cluster-wide aggregator of resource usage data. The metrics server will only present 
 the last data points and it’s not in charge of long term storage.
 
@@ -194,6 +203,12 @@ the last data points and it’s not in charge of long term storage.
 Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指标
 内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns 等组件的详细运行状态
 编排级的 metrics：比如 Deployment 的状态、资源请求、调度和 API 延迟等数据指标
+
+
+综合指标使用
+label_join用法：
+sum(container_memory_working_set_bytes) by (container_name) / sum(label_join(kube_pod_container_resource_limits_memory_bytes,
+    "container_name", "", "container")) by (container_name)
 
 --------------------------------------------------------------------------------------------------------------
 altermanager：
