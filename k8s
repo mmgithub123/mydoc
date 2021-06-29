@@ -157,6 +157,18 @@ Utilization: the average time that the resource was busy servicing work
 Saturation: the degree to which the resource has extra work which it can’t service, often queued
 Errors: the count of error events
 
+（以网络举例子：
+ bandwidth is the maximum rate of data transfer across a given path.
+ 
+Depending on your workload, you may be more interested sent vs. received traffic. For now I will define utilization as the sum of sent and received.
+This query will give you the bytes per second of all network interfaces by node:
+
+sum(rate(node_network_receive_bytes[5m])) by (node) + sum(rate(node_network_transmit_bytes[5m])) by (node)
+Saturation, without access to the underlying network capacity, will be hard to determine. We can use dropped packets as a proxy for network saturation:
+
+sum(rate(node_network_receive_drop[5m])) by (node) + sum(rate(node_network_transmit_drop[5m])) by (node)
+Errors are reported as node_network_receive_errs and node_network_transmit_errs.
+）
 
 
 
