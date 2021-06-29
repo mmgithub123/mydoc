@@ -97,6 +97,25 @@ rkB/s （有个1024倍差距，因为Prometheus单位是byte）
 node_disk_written_bytes_total
 wkB/s
 
+15,container_cpu_cfs_throttled_seconds_total
+cpu超过limit，被Linux runtime 勒死的次数
+
+16，容器内存指标
+container_memory_cache -- Number of bytes of page cache memory.
+container_memory_rss -- Size of RSS in bytes.
+container_memory_swap -- Container swap usage in bytes.
+container_memory_usage_bytes -- Current memory usage in bytes,       
+                                including all memory regardless of
+                                when it was accessed.
+container_memory_max_usage_bytes -- Maximum memory usage recorded 
+                                    in bytes.
+container_memory_working_set_bytes -- Current working set in bytes.
+container_memory_failcnt -- Number of memory usage hits limits.
+container_memory_failures_total -- Cumulative count of memory 
+                                   allocation failures.
+
+
+container_memory_working_set_bytes，is what the OOM killer is watching for
 
 
 
@@ -127,10 +146,37 @@ min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unk
 pending-》waiting，containercreating-》running-》crashloopbackoff，unknow，terminating，error-》failed，succeed
 
 
+KubernetesDaemonsetRolloutStuck
+kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 or kube_daemonset_status_desired_number_scheduled - 
+kube_daemonset_status_current_number_scheduled > 0
+有daemonset not scheduled or not ready，和节点不匹配
+
+KubernetesDaemonsetMisscheduled
+kube_daemonset_status_number_misscheduled > 0
+daemonset运行在不该运行的节点上面
+
+
 3,KubeletTooManyPods
 
 
 4, KubernetesMemoryPressure
+kube_node_status_condition{condition="MemoryPressure",status="true"} == 1
+node has MemoryPressure condition
+
+KubernetesDiskPressure
+kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+node has DiskPressure condition
+
+KubernetesOutOfDisk
+kube_node_status_condition{condition="OutOfDisk",status="true"} == 1
+node has OutOfDisk condition
+
+KubernetesOutOfCapacity
+sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(pod, namespace) group_left(node) (0 * kube_pod_info)) / 
+sum(kube_node_status_allocatable_pods) by (node) * 100 > 90
+
+count(kube_pod_status_phase{phase="Running"})  集群一共pod数
+kube_node_status_allocatable_pods              每个节点可分配pod
 
 
 5,ContainerKilled
@@ -146,7 +192,7 @@ Instead, I can do something like time() - container_last_seen{name=my-container}
 
 7，ContainerMemoryUsage
 (sum by(instance, name, pod) (container_memory_working_set_bytes) / sum by(instance, name, pod) (container_spec_memory_limit_bytes > 0) * 100) > 80
-使用内存占limit内存大于80%
+容器内存利用率，容器使用内存占limit内存大于80%
 
 8，KubernetesVolumeFullInFourDays
  predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0
@@ -235,7 +281,16 @@ rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_to
  node_network_speed_bytes{device!~"^tap.*"} > 0.8
 收发流量比理论带宽，大于80%了，网络跑满了
 
-28，
+28，ContainerHighThrottleRate
+rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
+容器cpu超过limit了，正在被干死
+
+29，ContainerVolumeUsage
+ (1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80
+ 用I节点间接计算容器存储的资源利用率
+ 
+ 30，
+ 
 
 
 
