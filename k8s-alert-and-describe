@@ -175,8 +175,35 @@ KubernetesOutOfCapacity
 sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(pod, namespace) group_left(node) (0 * kube_pod_info)) / 
 sum(kube_node_status_allocatable_pods) by (node) * 100 > 90
 
-count(kube_pod_status_phase{phase="Running"})  集群一共pod数
+count(kube_pod_status_phase{phase="Running"})  集群一共running的pod数
 kube_node_status_allocatable_pods              每个节点可分配pod
+0 * kube_pod_info                              化0操作，只取信息，不取指标
+ (kube_pod_status_phase{phase="Running"} == 1) + on(pod, namespace) group_left(node) (0 * kube_pod_info)  正在running的pod按pod和namespace对齐，留node标签用来分组求和
+ running pod数在总可分配pod数的百分比
+ 
+ KubernetesContainerOomKiller
+ 容器oom killer
+ 
+  KubernetesPersistentvolumeclaimPending
+  pvc pending
+  
+  KubernetesVolumeOutOfDiskSpace
+  Volume is almost full (< 10% left)
+  
+  KubernetesVolumeFullInFourDays
+  预测快满
+  
+  KubernetesPersistentvolumeError
+  pv在 Failed|Pending  状态
+  
+  KubernetesPodCrashLooping
+  increase(kube_pod_container_status_restarts_total[1m]) > 3
+  容器频繁重启
+  
+  KubernetesApiServerErrors
+  apiserver 500 错误太多
+  
+  
 
 
 5,ContainerKilled
