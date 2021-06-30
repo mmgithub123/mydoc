@@ -5,6 +5,22 @@ node  :  https://node.demo.do.prometheus.io/metrics
 容器：
 https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md#:~:text=Prometheus%20hardware%20metrics%20%20%20%20Metric%20name,%20%20%20%208%20more%20rows%20
 
+获取方式：
+Go to Prometheus > Status > Targets and get the endpoint you want, for example:
+
+Node       = http://HOSTNAME:9100/metrics
+Bitbucket  = https://BITBUCKET-SERVER:443/plugins/servlet/prometheus/metrics
+Prometheus = http://PROMETHEUS-SERVER:9090/metrics
+...
+Execute the following command to get all metrics, values and descriptions:
+
+wget ENDPOINT
+For example:
+
+wget http://HOSTNAME:9100/metrics
+
+
+------------------------------------------------------------------------------------------------------------
 
 promql:
 
