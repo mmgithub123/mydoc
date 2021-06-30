@@ -1,4 +1,16 @@
+promql:
+
+offset   偏移修饰器，表示多长时间之前
+
+
+
 function mean:
+increase( )  就是末值减去首值
+eg:某一分钟cpu使用时间 increase()[1m]=该分钟末cpu使用时间-该分钟初cpu使用时间
+
+rate(）
+eg:某一分钟cpu使用率 rate()[1m]=某一分钟cpu使用时间/60s
+即 rate()=increase( )/60s
 1，rate()函数：获取指定时间段的平均量,(last值-first值)/时间差s
 
 2，predict_linear(),对曲线变化速率进行计算，起到一定的预测作用。比如当前这1个小时的磁盘可用率急剧下降，这种情况可能导致磁盘很快被写满，这时可以使用该函数，
@@ -12,8 +24,17 @@ max_over_time(range-vector): the maximum value of all points in the specified in
 sum_over_time(range-vector): the sum of all values in the specified interval.
 count_over_time(range-vector): the count of all values in the specified interval.
 
-4，ignoreing(), on()
-使用ignoreing可以在匹配时忽略某些便签。而on则用于将匹配行为限定在某些便签之内。
+4，向量与向量之间的计算
+
+ignoring：在匹配时忽略某些标签
+on：将匹配限定在某些标签之内
+group_left：如果左边标签多的话，也就是多对一，使用group_left
+group_right：如果右边标签多的话，也就是一对多，使用group_right
+一对一匹配（标签数量相同，排除不同的标签或限制指定的标签进行匹配）
+vector1 / ignoring(code) vector2
+多对一匹配和一对多
+vector1 on(label) group_left vector2
+vector1 on(label) group_right vector2
 
 
 
