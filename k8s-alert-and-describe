@@ -1,3 +1,11 @@
+prometheus metric list:
+
+node  :  https://node.demo.do.prometheus.io/metrics
+
+容器：
+https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md#:~:text=Prometheus%20hardware%20metrics%20%20%20%20Metric%20name,%20%20%20%208%20more%20rows%20
+
+
 promql:
 
 offset   偏移修饰器，表示多长时间之前
