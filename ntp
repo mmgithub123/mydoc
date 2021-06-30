@@ -2,3 +2,6 @@ ntp in k8s
 
 The ntp (Network Time Protocol) package should be installed. This prevents errors with certificate validation that can occur when 
 the time is not synchronized between the client and server.
+
+https://github.com/prometheus/node_exporter/pull/1850
+https://github.com/prometheus/node_exporter/pull/1851
