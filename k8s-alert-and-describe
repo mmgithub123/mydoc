@@ -341,6 +341,830 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
  
 
 
+----------------------------------------------------------------------------------------------------------------------------------------------
+
+  
+    groups:
+    - name: pro-kube-state-metrics-rule.rules
+      rules:
+
+      #解读：
+      #15分钟内以1分钟步长检测pod在Pending|Unknown|Failed状态
+      #pod大致流程图：pending-》waiting，containercreating-》running-》crashloopbackoff，unknow，terminating，error-》failed，succeed
+      - alert: KubernetesPodNotHealthy
+        expr: min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[15m:1m]) > 0
+        for: 0m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          #summary: " {{ $_kube_pod_labels_.label_app }}"
+          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"     
+     
+      #有daemonset和节点不匹配， not scheduled 或者是 not ready，
+      - alert: KubernetesDaemonsetRolloutStuck
+        expr: kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0
+        for: 10m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes DaemonSet rollout stuck (instance {{ $labels.instance }})
+          description: "Some Pods of DaemonSet are not scheduled or not ready\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #daemonset运行在不该运行的节点上面
+      - alert: KubernetesDaemonsetMisscheduled
+        expr: kube_daemonset_status_number_misscheduled > 0
+        for: 1m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes DaemonSet misscheduled (instance {{ $labels.instance }})
+          description: "Some DaemonSet Pods are running where they are not supposed to run\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #已经10分钟不是condition="Ready",status="true"了。condition共有Ready ，DiskPressure，MemoryPressure ，
+      #PIDPressure ，NetworkUnavailable  5种状态。
+      #节点状态的定义：kubelet 会将一个或多个”驱逐信号“映射到对应的节点状态。如果满足硬驱逐阈值，或者满足独立于其关联宽限期的软驱逐阈值时，
+      #kubelet将报告节点处于压力下的状态。
+      #当可用资源较少时，kubelet需要保证节点稳定性， 如果任意一种资源耗尽，节点将会变得不稳定，所以定义一些驱逐信号，当满足信号时，做为
+      #决策依据，触发驱逐行为，那么会主动终止一或多个 Pod 的运行，以回收资源。当一个 Pod 被终止时，
+      #其中的容器会全部停止，Pod 状态会被置为 Failed。
+      
+      #节点状态根据相应的驱逐信号定义：
+      #MemoryPressure	memory.available	节点上可用内存量达到逐出阈值
+      #DiskPressure	nodefs.available, nodefs.inodesFree, imagefs.available, 或 imagefs.inodesFree	
+      #节点或者节点的根文件系统或镜像文件系统上可用磁盘空间和 i 节点个数达到逐出阈值
+      #PIDPressure	pid.available	在（Linux）节点上的可用进程标识符已降至驱逐阈值以下
+      
+      #kubelet 有如下所示的默认硬驱逐阈值：
+      #memory.available<100Mi
+      #nodefs.available<10%
+      #imagefs.available<15%
+      #nodefs.inodesFree<5％
+      
+      - alert: KubernetesNodeReady
+        expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 10m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes Node ready (instance {{ $labels.instance }})
+          description: "Node {{ $labels.node }} has been unready for a long time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #见alert: KubernetesNodeReady
+      - alert: KubernetesMemoryPressure
+        expr: kube_node_status_condition{condition="MemoryPressure",status="true"} == 1
+        for: 2m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes memory pressure (instance {{ $labels.instance }})
+          description: "{{ $labels.node }} has MemoryPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      #见alert: KubernetesNodeReady
+      - alert: KubernetesDiskPressure
+        expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+        for: 2m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes disk pressure (instance {{ $labels.instance }})
+          description: "{{ $labels.node }} has DiskPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
+      #意思是说running pod数在总可分配pod数的百分比
+      #count(kube_pod_status_phase{phase="Running"})  集群一共running的pod数
+      #kube_node_status_allocatable_pods              每个节点可分配pod
+      #0 * kube_pod_info                              化0操作，只取信息，不取指标
+      #(kube_pod_status_phase{phase="Running"} == 1) + on(pod, namespace) group_left(node) (0 * kube_pod_info)  
+      #正在running的pod按pod和namespace对齐，留node标签用来分组求和
+      - alert: KubernetesOutOfCapacity
+        expr: sum by (node) ((kube_pod_status_phase{phase="Running"} == 1) + on(pod, namespace) group_left(node) (0 * kube_pod_info)) / sum(kube_node_status_allocatable_pods) by (node) * 100 > 90
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes out of capacity (instance {{ $labels.instance }})
+          description: "{{ $labels.node }} is out of capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      # 容器oom killer
+      #过去10分钟内，容器重启次数大于1 且最近10分钟内容器终止原因是OOMKilled
+      - alert: KubernetesContainerOomKiller
+        expr: (kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes container oom killer (instance {{ $labels.instance }})
+          description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #pvc剩余空间小于10%了
+      - alert: KubernetesVolumeOutOfDiskSpace
+        expr: kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes * 100 < 10
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes Volume out of disk space (instance {{ $labels.instance }})
+          description: "Volume is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+      
+      #当前6小时的使用情况预测，4天后PVC将满
+      - alert: KubernetesVolumeFullInFourDays
+        expr: predict_linear(kubelet_volume_stats_available_bytes[6h], 4 * 24 * 3600) < 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes Volume full in four days (instance {{ $labels.instance }})
+          description: "{{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is expected to fill up within four days. Currently {{ $value | humanize }}% is available.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
+
+      #一分钟内重启次数大于三次，且持续了2分钟
+      - alert: KubernetesPodCrashLooping
+        expr: increase(kube_pod_container_status_restarts_total[1m]) > 3
+        for: 2m
+        labels:
+          severity: error
+          env: prod
+          #team: unknow #three value op,rd,unknow
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes pod crash looping (instance {{ $labels.instance }})
+          description: "Pod {{ $labels.pod }} is crash looping\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
+      #api client 500 请求占比超过 1%了
+      - alert: KubernetesApiClientErrors
+        expr: (sum(rate(rest_client_requests_total{code=~"(5).."}[1m])) by (instance, job) / sum(rate(rest_client_requests_total[1m])) by (instance, job)) * 100 > 1
+        for: 2m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes API client errors (instance {{ $labels.instance }})
+          description: "Kubernetes API client is experiencing high error rate\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #证书下周过期
+      - alert: KubernetesClientCertificateExpiresNextWeek
+        expr: apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 7*24*60*60
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes client certificate expires next week (instance {{ $labels.instance }})
+          description: "A client certificate used to authenticate to the apiserver is expiring next week.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #证书24小时内要过期
+      - alert: KubernetesClientCertificateExpiresSoon
+        expr: apiserver_client_certificate_expiration_seconds_count{job="apiserver"} > 0 and histogram_quantile(0.01, sum by (job, le) (rate(apiserver_client_certificate_expiration_seconds_bucket{job="apiserver"}[5m]))) < 24*60*60
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Kubernetes client certificate expires soon (instance {{ $labels.instance }})
+          description: "A client certificate used to authenticate to the apiserver is expiring in less than 24.0 hours.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    
+
+    - name: pro-prometheus-rule.rules
+      rules:     
+
+
+      - alert: PrometheusTargetMissing
+        expr: up == 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus target missing (instance {{ $labels.instance }})
+          description: "A Prometheus target has disappeared. An exporter might be crashed.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusAllTargetsMissing
+        expr: count by (job) (up) == 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus all targets missing (instance {{ $labels.instance }})
+          description: "A Prometheus job does not have living target anymore.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusConfigurationReloadFailure
+        expr: prometheus_config_last_reload_successful != 1
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus configuration reload failure (instance {{ $labels.instance }})
+          description: "Prometheus configuration reload error\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTooManyRestarts
+        expr: changes(process_start_time_seconds{job=~"prometheus|pushgateway|alertmanager"}[15m]) > 2
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus too many restarts (instance {{ $labels.instance }})
+          description: "Prometheus has restarted more than twice in the last 15 minutes. It might be crashlooping.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusAlertmanagerConfigurationReloadFailure
+        expr: alertmanager_config_last_reload_successful != 1
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus AlertManager configuration reload failure (instance {{ $labels.instance }})
+          description: "AlertManager configuration reload error\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusAlertmanagerConfigNotSynced
+        expr: count(count_values("config_hash", alertmanager_config_hash)) > 1
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus AlertManager config not synced (instance {{ $labels.instance }})
+          description: "Configurations of AlertManager cluster instances are out of sync\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusAlertmanagerE2eDeadManSwitch
+        expr: vector(1)
+        for: 0m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus AlertManager E2E dead man switch (instance {{ $labels.instance }})
+          description: "Prometheus DeadManSwitch is an always-firing alert. It's used as an end-to-end test of Prometheus through the Alertmanager.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+ 
+      - alert: PrometheusNotConnectedToAlertmanager
+        expr: prometheus_notifications_alertmanagers_discovered < 1
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus not connected to alertmanager (instance {{ $labels.instance }})
+          description: "Prometheus cannot connect the alertmanager\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      
+      - alert: PrometheusRuleEvaluationFailures
+        expr: increase(prometheus_rule_evaluation_failures_total[3m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus rule evaluation failures (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} rule evaluation failures, leading to potentially ignored alerts.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTemplateTextExpansionFailures
+        expr: increase(prometheus_template_text_expansion_failures_total[3m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus template text expansion failures (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} template text expansion failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusRuleEvaluationSlow
+        expr: prometheus_rule_group_last_duration_seconds > prometheus_rule_group_interval_seconds
+        for: 5m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus rule evaluation slow (instance {{ $labels.instance }})
+          description: "Prometheus rule evaluation took more time than the scheduled interval. It indicates a slower storage backend access or too complex query.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusNotificationsBacklog
+        expr: min_over_time(prometheus_notifications_queue_length[10m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus notifications backlog (instance {{ $labels.instance }})
+          description: "The Prometheus notification queue has not been empty for 10 minutes\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusAlertmanagerNotificationFailing
+        expr: rate(alertmanager_notifications_failed_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus AlertManager notification failing (instance {{ $labels.instance }})
+          description: "Alertmanager is failing sending notifications\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTargetEmpty
+        expr: prometheus_sd_discovered_targets == 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus target empty (instance {{ $labels.instance }})
+          description: "Prometheus has no target in service discovery\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTargetScrapingSlow
+        expr: prometheus_target_interval_length_seconds{quantile="0.9"} > 60
+        for: 5m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus target scraping slow (instance {{ $labels.instance }})
+          description: "Prometheus is scraping exporters slowly\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusLargeScrape
+        expr: increase(prometheus_target_scrapes_exceeded_sample_limit_total[10m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus large scrape (instance {{ $labels.instance }})
+          description: "Prometheus has many scrapes that exceed the sample limit\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTargetScrapeDuplicate
+        expr: increase(prometheus_target_scrapes_sample_duplicate_timestamp_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus target scrape duplicate (instance {{ $labels.instance }})
+          description: "Prometheus has many samples rejected due to duplicate timestamps but different values\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbCheckpointCreationFailures
+        expr: increase(prometheus_tsdb_checkpoint_creations_failed_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB checkpoint creation failures (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} checkpoint creation failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbCheckpointDeletionFailures
+        expr: increase(prometheus_tsdb_checkpoint_deletions_failed_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB checkpoint deletion failures (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} checkpoint deletion failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbCompactionsFailed
+        expr: increase(prometheus_tsdb_compactions_failed_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB compactions failed (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} TSDB compactions failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbHeadTruncationsFailed
+        expr: increase(prometheus_tsdb_head_truncations_failed_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB head truncations failed (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} TSDB head truncation failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbReloadFailures
+        expr: increase(prometheus_tsdb_reloads_failures_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB reload failures (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} TSDB reload failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbWalCorruptions
+        expr: increase(prometheus_tsdb_wal_corruptions_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB WAL corruptions (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} TSDB WAL corruptions\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      - alert: PrometheusTsdbWalTruncationsFailed
+        expr: increase(prometheus_tsdb_wal_truncations_failed_total[1m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          env: prod
+          team: op #three value op,rd,unknow
+        annotations:
+          summary: Prometheus TSDB WAL truncations failed (instance {{ $labels.instance }})
+          description: "Prometheus encountered {{ $value }} TSDB WAL truncation failures\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
+
+    - name: pro-docker-containers.rules 
+      rules:     
+      
+      #最后一次看到metric已经是60秒前了，认为容器已经挂了
+      - alert: ContainerKilled
+        expr: time() - container_last_seen > 60
+        for: 0m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Container killed (instance {{ $labels.instance }})
+          description: "A container has disappeared\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #3分钟容器使用CPU时间平均量，按instance, name, pod分组求和，×100后大于80
+      - alert: ContainerCpuUsage
+        expr: (sum(rate(container_cpu_usage_seconds_total[3m])) BY (instance, name,pod) * 100) > 80
+        for: 2m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Container CPU usage (instance {{ $labels.instance }})
+          description: "Container CPU usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #容器内存利用率，容器使用内存占limit内存大于80%
+      - alert: ContainerMemoryUsage
+        expr: (sum(container_memory_working_set_bytes) BY (instance, name,pod) / sum(container_spec_memory_limit_bytes > 0) BY (instance, name,pod) * 100) > 80
+        for: 2m
+        labels:
+          severity: error
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Container Memory usage (instance {{ $labels.instance }})
+          description: "Container Memory usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      # 用I节点间接计算容器存储的资源利用率 已经大于80%
+      - alert: ContainerVolumeUsage
+        expr: (1 - (sum(container_fs_inodes_free) BY (instance) / sum(container_fs_inodes_total) BY (instance))) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Container Volume usage (instance {{ $labels.instance }})
+          description: "Container Volume usage is above 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      
+      #容器cpu超过limit了，正在被干死
+      - alert: ContainerHighThrottleRate
+        expr: rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Container high throttle rate (instance {{ $labels.instance }})
+          description: "Container is being throttled\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+     
+
+    - name: pro-node-exporter.rules 
+      rules:     
+      
+      #可用内存不足10%了
+      - alert: HostOutOfMemory
+        expr: node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100 < 10
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host out of memory (instance {{ $labels.instance }})
+          description: "Node memory is filling up (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #平均1分钟已经有1000次从磁盘调虚拟内存了，说明内存压力大了
+      - alert: HostMemoryUnderMemoryPressure
+        expr: rate(node_vmstat_pgmajfault[1m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host memory under memory pressure (instance {{ $labels.instance }})
+          description: "The node is under heavy memory pressure. High rate of major page faults\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #网络接收数据每秒大于100M
+      - alert: HostUnusualNetworkThroughputIn
+        expr: sum by (instance) (rate(node_network_receive_bytes_total[2m])) / 1024 / 1024 > 100
+        for: 5m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host unusual network throughput in (instance {{ $labels.instance }})
+          description: "Host network interfaces are probably receiving too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #网络发送数据每秒大于100M
+      - alert: HostUnusualNetworkThroughputOut
+        expr: sum by (instance) (rate(node_network_transmit_bytes_total[2m])) / 1024 / 1024 > 100
+        for: 5m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host unusual network throughput out (instance {{ $labels.instance }})
+          description: "Host network interfaces are probably sending too much data (> 100 MB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+   
+      #磁盘读数据大于每秒50M
+      - alert: HostUnusualDiskReadRate
+        expr: sum by (instance) (rate(node_disk_read_bytes_total[2m])) / 1024 / 1024 > 50
+        for: 5m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host unusual disk read rate (instance {{ $labels.instance }})
+          description: "Disk is probably reading too much data (> 50 MB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+ 
+      #磁盘写数据大于每秒50M
+      - alert: HostUnusualDiskWriteRate
+        expr: sum by (instance) (rate(node_disk_written_bytes_total[2m])) / 1024 / 1024 > 50
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host unusual disk write rate (instance {{ $labels.instance }})
+          description: "Disk is probably writing too much data (> 50 MB/s)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #挂载的文件系统快满了，就剩10%不到了
+      - alert: HostOutOfDiskSpace
+        expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host out of disk space (instance {{ $labels.instance }})
+          description: "Disk is almost full (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #预测，24小时内磁盘要满
+      - alert: HostDiskWillFillIn24Hours
+        expr: (node_filesystem_avail_bytes * 100) / node_filesystem_size_bytes < 10 and ON (instance, device, mountpoint) predict_linear(node_filesystem_avail_bytes{fstype!~"tmpfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly == 0
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host disk will fill in 24 hours (instance {{ $labels.instance }})
+          description: "Filesystem is predicted to run out of space within the next 24 hours at current write rate\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #i节点剩不到10%了，快满了
+      - alert: HostOutOfInodes
+        expr: node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host out of inodes (instance {{ $labels.instance }})
+          description: "Disk is almost running out of available inodes (< 10% left)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #i节点预测，24小时后快满了
+      - alert: HostInodesWillFillIn24Hours
+        expr: node_filesystem_files_free{mountpoint ="/rootfs"} / node_filesystem_files{mountpoint="/rootfs"} * 100 < 10 and predict_linear(node_filesystem_files_free{mountpoint="/rootfs"}[1h], 24 * 3600) < 0 and ON (instance, device, mountpoint) node_filesystem_readonly{mountpoint="/rootfs"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host inodes will fill in 24 hours (instance {{ $labels.instance }})
+          description: "Filesystem is predicted to run out of inodes within the next 24 hours at current write rate\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
+      #一次读操作大于100毫秒了，Disk latency在增长
+      - alert: HostUnusualDiskReadLatency
+        expr: rate(node_disk_read_time_seconds_total[1m]) / rate(node_disk_reads_completed_total[1m]) > 0.1 and rate(node_disk_reads_completed_total[1m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host unusual disk read latency (instance {{ $labels.instance }})
+          description: "Disk latency is growing (read operations > 100ms)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #一次写操作，大于100毫秒了
+      - alert: HostUnusualDiskWriteLatency
+        expr: rate(node_disk_write_time_seconds_total[1m]) / rate(node_disk_writes_completed_total[1m]) > 0.1 and rate(node_disk_writes_completed_total[1m]) > 0
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host unusual disk write latency (instance {{ $labels.instance }})
+          description: "Disk latency is growing (write operations > 100ms)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #idle 空闲模式很小 换句话说，CPU负载很大了
+      - alert: HostHighCpuLoad
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 80
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host high CPU load (instance {{ $labels.instance }})
+          description: "CPU load is > 80%\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #被偷cpu超过10%了
+      - alert: HostCpuStealNoisyNeighbor
+        expr: avg by(instance) (rate(node_cpu_seconds_total{mode="steal"}[5m])) * 100 > 10
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host CPU steal noisy neighbor (instance {{ $labels.instance }})
+          description: "CPU steal is > 10%. A noisy neighbor is killing VM performances or a spot instance may be out of credit.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #swap快满了
+      - alert: HostSwapIsFillingUp
+        expr: (1 - (node_memory_SwapFree_bytes / node_memory_SwapTotal_bytes)) * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host swap is filling up (instance {{ $labels.instance }})
+          description: "Swap is filling up (>80%)\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+    
+      #host内核版本不一致
+      - alert: HostKernelVersionDeviations
+        expr: count(sum(label_replace(node_uname_info, "kernel", "$1", "release", "([0-9]+.[0-9]+.[0-9]+).*")) by (kernel)) > 1
+        for: 6h
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host kernel version deviations (instance {{ $labels.instance }})
+          description: "Different kernel versions are running\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #有 oom kill 了，linux为了避免内存用尽,导致系统的卡死,会唤醒oom_killer,找出/proc/pid/oom_score值最大的进程将之kill掉,
+      #从而释放内存,来保证整个系统的的正常运行。
+      - alert: HostOomKillDetected
+        expr: increase(node_vmstat_oom_kill[1m]) > 0
+        for: 0m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host OOM kill detected (instance {{ $labels.instance }})
+          description: "OOM kill detected\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #错包占比大了
+      - alert: HostNetworkReceiveErrors
+        expr: rate(node_network_receive_errs_total[2m]) / rate(node_network_receive_packets_total[2m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host Network Receive Errors (instance {{ $labels.instance }})
+          description: "Host {{ $labels.instance }} interface {{ $labels.device }} has encountered {{ printf \"%.0f\" $value }} receive errors in the last five minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      #收发流量比理论带宽，大于80%了，网络跑满了
+      - alert: HostNetworkInterfaceSaturated
+        expr:  (rate(node_network_receive_bytes_total{device!~"^tap.*"}[1m]) + rate(node_network_transmit_bytes_total{device!~"^tap.*"}[1m])) / node_network_speed_bytes{device!~"^tap.*"} > 0.8
+        for: 1m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host Network Interface Saturated (instance {{ $labels.instance }})
+          description: "The network interface \"{{ $labels.interface }}\" on \"{{ $labels.instance }}\" is getting overloaded.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+      
+      #时钟不同步
+      - alert: HostClockNotSynchronising
+        expr: min_over_time(node_timex_sync_status[1m]) == 0 and node_timex_maxerror_seconds >= 16
+        for: 2m
+        labels:
+          severity: warning
+          env: prod
+          team: op #three value op,rd,unknow
+          #team: unknow #three value op,rd,unknow
+        annotations:
+          summary: Host clock not synchronising (instance {{ $labels.instance }})
+          description:  "Clock not synchronising.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
+
 
 
 
