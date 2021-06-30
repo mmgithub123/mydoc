@@ -235,6 +235,7 @@ prometheus触发一条告警的过程：
 prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑制|静默--->媒体类型--->邮件|钉钉|微信等。
 
 报警规则：https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
+         https://cloud.tencent.com/document/product/1416/56011?from=information.detail.linux%20%E7%BD%91%E5%8D%A1%E6%BC%82%E7%A7%BB
          https://help.aliyun.com/document_detail/176180.html?spm=a2c4g.11186623.4.5.717e3eebxbWsZy#title-dcc-mv9-w33
          https://alex.dzyoba.com/blog/prometheus-alerts/
          https://github.com/infinityworks/prometheus-example-queries
