@@ -5,3 +5,8 @@ the time is not synchronized between the client and server.
 
 https://github.com/prometheus/node_exporter/pull/1850
 https://github.com/prometheus/node_exporter/pull/1851
+
+
+ chronyc：
+ 
+ chrony 是网络时间协议(NTP)的通用实现
