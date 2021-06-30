@@ -1,0 +1,4 @@
+ntp in k8s
+
+The ntp (Network Time Protocol) package should be installed. This prevents errors with certificate validation that can occur when 
+the time is not synchronized between the client and server.
