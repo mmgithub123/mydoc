@@ -176,6 +176,32 @@ CPU is specified as fractions of a CPU or core (down to 1/1000th) and memory is 
 you will be throttled if you exceed the CPU limit, and killed if you exceed the memory limit.
 
 
+Kubernetes 生态的组件都会提供 /metric 接口以提供自监控:
+cAdvisor：集成在 Kubelet 中。
+kubelet：10255 为非认证端口，10250 为认证端口。
+apiserver：6443 端口，关心请求数、延迟等。
+scheduler：10251 端口。
+controller-manager：10252 端口。
+etcd：如 etcd 写入读取延迟、存储容量等。
+Docker：需要开启 experimental 实验特性，配置 metrics-addr，如容器创建耗时等指标。
+kube-proxy：默认 127 暴露，10249 端口。外部采集时可以修改为 0.0.0.0 监听，会暴露：写入 iptables 规则的耗时等指标。
+kube-state-metrics：Kubernetes 官方项目，采集 Pod、Deployment 等资源的元信息。
+node-exporter：Prometheus 官方项目，采集机器指标如 CPU、内存、磁盘。
+blackbox_exporter：Prometheus 官方项目，网络探测，DNS、ping、http 监控。
+process-exporter：采集进程指标。
+NVIDIA Exporter：需要 GPU 数据监控。
+node-problem-detector：即 NPD，准确的说不是 Exporter，但也会监测机器状态，上报节点异常打 taint。
+
+
+role:node 的，包括 cAdvisor、 node-exporter、kubelet 的 summary、kube-proxy、Docker 等指标
+role:endpoint 的，包括 kube-state-metric 以及其他自定义 Exporter
+普通采集：包括 etcd、Apiserver 性能指标、进程指标等。
+在监控 cAdvisor、Docker、Kube-Proxy 的 Metric 时，选择从 Apiserver Proxy 到节点的对应端口，统一设置比较方便，也可以直接拉取节点，Apiserver 仅做服务发现。
+
+
+
+
+
 
 cadvisor              ，kubelet container
 metric-server         ，focused on implementing the resource metrics API: CPU, file descriptors, memory, request latencies, etc.
@@ -191,7 +217,7 @@ In Kubernetes, cAdvisor runs as part of the Kubelet binary. So, any aggregator r
 
 
 
-
+kube-state-metrics本质上是不断轮询api-server
 Kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about 
 the state of the objects such as deployments, nodes, and pods. It is important to note that kube-state-metrics is 
 just a metrics endpoint. Other entities need to scrape it and provide long term storage (e.g., the Prometheus server).
@@ -229,9 +255,13 @@ For unsupported use cases, check out full monitoring solutions like Prometheus.
 对于集群的监控一般我们需要考虑以下几个方面：
 
 Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指标
-内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns 等组件的详细运行状态
+内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns，etcd，apiserver，kubelet，kube-proxy等组件的详细运行状态，
 编排级的 metrics：比如 Deployment 的状态、资源请求、调度和 API 延迟等数据指标
 
+kube-state-metric 还有一个很重要的使用场景，就是和 cAdvisor 指标组合，原始的 cAdvisor 中只有 Pod 信息，不知道属于哪个 Deployment 或者 sts，
+但是和 kube-state-metric 中的 kube_pod_info 做 join 查询之后就可以显示出来，kube-state-metric 的元数据指标，在扩展 cAdvisor 的 label 中起到了很多作用，
+prometheus-operator 的很多 record rule 就使用了 kube-state-metric 做组合查询。
+kube-state-metric 中也可以展示 Pod 的 label 信息，可以在拿到 cAdvisor 数据后更方便地做 group by，如按照 Pod 的运行环境分类
 
 综合指标使用
 label_join用法：
@@ -265,6 +295,7 @@ prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑�
 报警规则：
          https://www.circonus.com/2020/09/guide-to-kubernetes-monitoring-part-1/
          https://www.circonus.com/2021/01/guide-to-monitoring-kubernetes-part-2-which-metrics-and-health-conditions-you-should-be-monitoring/
+         https://tanzu.vmware.com/developer/guides/kubernetes/observability-k8s-monitoring-checklist/
          https://awesome-prometheus-alerts.grep.to/rules#prometheus-self-monitoring
          https://cloud.tencent.com/document/product/1416/56011?from=information.detail.linux%20%E7%BD%91%E5%8D%A1%E6%BC%82%E7%A7%BB
          https://help.aliyun.com/document_detail/176180.html?spm=a2c4g.11186623.4.5.717e3eebxbWsZy#title-dcc-mv9-w33
