@@ -169,7 +169,7 @@ Saturation, without access to the underlying network capacity, will be hard to d
 sum(rate(node_network_receive_drop[5m])) by (node) + sum(rate(node_network_transmit_drop[5m])) by (node)
 Errors are reported as node_network_receive_errs and node_network_transmit_errs.
 ）
-
+-----------------------------------------------------------------------------------------------------------------------------
 
 k8s  Requests and limits :
 CPU is specified as fractions of a CPU or core (down to 1/1000th) and memory is specified in bytes.
@@ -182,10 +182,15 @@ metric-server         ，focused on implementing the resource metrics API: CPU, 
 kube-state-metrics    ，focused on orchestration metadata: deployment, pod, replica status, etc.
 node-exporter         ，node
 
+
+
 cAdvisor is an open source container resource usage and performance analysis agent. 
 It is purpose-built for containers and supports Docker containers natively. 
 In Kubernetes, cAdvisor runs as part of the Kubelet binary. So, any aggregator retrieving “node local” and
  Docker metrics will directly scrape the Kubelet Prometheus endpoints.
+
+
+
 
 Kube-state-metrics is a simple service that listens to the Kubernetes API server and generates metrics about 
 the state of the objects such as deployments, nodes, and pods. It is important to note that kube-state-metrics is 
@@ -195,8 +200,31 @@ just a metrics endpoint. Other entities need to scrape it and provide long term 
 CronJob,DaemonSet,Deployment,Job,LimitRange,Node
 PersistentVolume,PersistentVolumeClaim,Pod,ReplicaSet,ReplicationController,ResourceQuota,Service,StatefulSet,Namespace,Horizontal Pod Autoscaler,Endpoint,Secret,ConfigMap
 
+
+
+
+
 Metrics-server is a cluster-wide aggregator of resource usage data. The metrics server will only present 
 the last data points and it’s not in charge of long term storage.
+
+metrics-server 就是用来做自动扩缩容目的的，别用来搞监控的东西。
+Metrics Server is not meant for non-autoscaling purposes. For example, don't use it to forward metrics to monitoring solutions, 
+or as a source of monitoring solution metrics.
+In such cases please collect metrics from Kubelet /metrics/resource endpoint directly.
+
+metrics-server使用场景：
+Use cases
+You can use Metrics Server for:
+CPU/Memory based horizontal autoscaling (learn more about Horizontal Autoscaling)
+Automatically adjusting/suggesting resources needed by containers (learn more about Vertical Autoscaling)
+Don't use Metrics Server when you need:
+Non-Kubernetes clusters
+An accurate source of resource usage metrics
+Horizontal autoscaling based on other resources than CPU/Memory
+For unsupported use cases, check out full monitoring solutions like Prometheus.
+
+
+-----------------------------------------------------------------------------------------------------------------------------
 
 对于集群的监控一般我们需要考虑以下几个方面：
 
