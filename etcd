@@ -5,3 +5,72 @@ If you have access to the master node, just do a curl from there with the client
 the certificate is in: /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.crt and the key /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.key.
 
 curl https://localhost:4001/metrics -k --cert /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.crt --key /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.key
+
+
+
+If you want to connect from outside of the master node, have the certificates from the master node, and have the port 4001 open, then you can access with the IP as well.
+curl https://[master_ip]:4001/metrics -k --cert /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.crt --key /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.key
+It will return a long list of metrics with this structure (truncated):
+
+# HELP etcd_disk_backend_snapshot_duration_seconds The latency distribution of backend snapshots.
+# TYPE etcd_disk_backend_snapshot_duration_seconds histogram
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.01"} 0
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.02"} 0
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.04"} 0
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.08"} 0
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.16"} 0
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.32"} 3286
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="0.64"} 4617
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="1.28"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="2.56"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="5.12"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="10.24"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="20.48"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="40.96"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="81.92"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="163.84"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="327.68"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="655.36"} 4620
+etcd_disk_backend_snapshot_duration_seconds_bucket{le="+Inf"} 4620
+etcd_disk_backend_snapshot_duration_seconds_sum 1397.2374600930025
+etcd_disk_backend_snapshot_duration_seconds_count 4620
+# HELP etcd_disk_wal_fsync_duration_seconds The latency distributions of fsync called by wal.
+# TYPE etcd_disk_wal_fsync_duration_seconds histogram
+etcd_disk_wal_fsync_duration_seconds_bucket{le="0.001"} 4.659349e+06
+etcd_disk_wal_fsync_duration_seconds_bucket{le="0.002"} 7.276276e+06
+etcd_disk_wal_fsync_duration_seconds_bucket{le="0.004"} 8.589085e+06
+If you want to configure a Prometheus to scrape etcd, you have to mount the certificates and create the job:
+
+The certificates are located in the master node in /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.key and /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.crt , 
+just download the certificates and create the secrets on Kubernetes with the next command.
+
+Disclaimer: The etcd is the core of any Kubernetes cluster and if you don’t take caution with the certificates, you can expose the entire cluster and be potentially a target.
+
+kubectl -n monitoring create secret generic etcd-ca --from-file=etcd-clients-ca.key --from-file etcd-clients-ca.crt
+kubectl -n monitoring patch deployment prometheus-server -p '{"spec":{"template":{"spec":{"volumes":[{"name":"etcd-ca","secret":{"defaultMode":420,"secretName":"etcd-ca"}}]}}}}'
+kubectl -n monitoring patch deployment prometheus-server -p '{"spec":{"template":{"spec":{"containers":[{"name":"prometheus-server","volumeMounts": [{"mountPath": "/opt/prometheus/secrets","name": "etcd-ca"}]}]}}}}'
+scrape_configs:
+    ...
+    - job_name: etcd
+      scheme: https
+      kubernetes_sd_configs:
+      - role: pod
+      relabel_configs:
+      - action: keep
+        source_labels:
+        - __meta_kubernetes_namespace
+        - __meta_kubernetes_pod_name
+        separator: '/'
+        regex: 'kube-system/etcd-manager-main.+'
+      - source_labels:
+        - __address__
+        action: replace
+        target_label: __address__
+        regex: (.+?)(\\:\\d)?
+        replacement: $1:4001
+      tls_config:
+        insecure_skip_verify: true
+        cert_file: /opt/prometheus/secrets/etcd-clients-ca.crt
+        key_file: /opt/prometheus/secrets/etcd-clients-ca.key
+        
+You can customize your own labels and relabeling configuration.
