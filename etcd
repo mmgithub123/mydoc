@@ -1,0 +1,7 @@
+
+在master访问ETCD：
+
+If you have access to the master node, just do a curl from there with the client certificate paths;
+the certificate is in: /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.crt and the key /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.key.
+
+curl https://localhost:4001/metrics -k --cert /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.crt --key /etc/kubernetes/pki/etcd-manager-main/etcd-clients-ca.key
