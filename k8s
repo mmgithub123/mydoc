@@ -333,6 +333,10 @@ curl -XPOST http://10.88.153.80:32035/-/reload
 服务发现：
 官网：https://prometheus.io/docs/prometheus/latest/configuration/configuration/#kubernetes_sd_config
 kubernetes_sd_configs
+
+总入口就是apiserver，而apiserver会在default namespace 的 kubernets service 暴露endpoints
+拿到信息后，走下面的流程 最终发现pod node service endpoint ingress 这些role
+
 # The API server addresses. If left empty, Prometheus is assumed to run inside
 # of the cluster and will discover API servers automatically and use the pod's
 # CA certificate and bearer token file at /var/run/secrets/kubernetes.io/serviceaccount/.
@@ -356,7 +360,172 @@ Prometheus会创建Kubernetes Client对role中指定的资源对象进行监听�
 从而实现对于有效target的抓取。而对于target的抓取，本质上是通过target中的__scheme__，__address__和__metrcis_path__这几个label，
 拼凑出一个URL，比如http://10.32.0.2/metrics，对该URL发起一个GET请求，获取监控数据
 
-配置：
+详细文档：
+<kubernetes_sd_config>
+Kubernetes SD configurations allow retrieving scrape targets from Kubernetes' REST API and always staying synchronized with the cluster state.
+
+One of the following role types can be configured to discover targets:
+
+node
+The node role discovers one target per cluster node with the address defaulting to the Kubelet's HTTP port. The target address defaults to the first existing address of the Kubernetes node object in the address type order of NodeInternalIP, NodeExternalIP, NodeLegacyHostIP, and NodeHostName.
+
+Available meta labels:
+
+__meta_kubernetes_node_name: The name of the node object.
+__meta_kubernetes_node_label_<labelname>: Each label from the node object.
+__meta_kubernetes_node_labelpresent_<labelname>: true for each label from the node object.
+__meta_kubernetes_node_annotation_<annotationname>: Each annotation from the node object.
+__meta_kubernetes_node_annotationpresent_<annotationname>: true for each annotation from the node object.
+__meta_kubernetes_node_address_<address_type>: The first address for each node address type, if it exists.
+In addition, the instance label for the node will be set to the node name as retrieved from the API server.
+
+service
+The service role discovers a target for each service port for each service. This is generally useful for blackbox monitoring of a service. The address will be set to the Kubernetes DNS name of the service and respective service port.
+
+Available meta labels:
+
+__meta_kubernetes_namespace: The namespace of the service object.
+__meta_kubernetes_service_annotation_<annotationname>: Each annotation from the service object.
+__meta_kubernetes_service_annotationpresent_<annotationname>: "true" for each annotation of the service object.
+__meta_kubernetes_service_cluster_ip: The cluster IP address of the service. (Does not apply to services of type ExternalName)
+__meta_kubernetes_service_external_name: The DNS name of the service. (Applies to services of type ExternalName)
+__meta_kubernetes_service_label_<labelname>: Each label from the service object.
+__meta_kubernetes_service_labelpresent_<labelname>: true for each label of the service object.
+__meta_kubernetes_service_name: The name of the service object.
+__meta_kubernetes_service_port_name: Name of the service port for the target.
+__meta_kubernetes_service_port_protocol: Protocol of the service port for the target.
+__meta_kubernetes_service_type: The type of the service.
+pod
+The pod role discovers all pods and exposes their containers as targets. For each declared port of a container, a single target is generated. If a container has no specified ports, a port-free target per container is created for manually adding a port via relabeling.
+
+Available meta labels:
+
+__meta_kubernetes_namespace: The namespace of the pod object.
+__meta_kubernetes_pod_name: The name of the pod object.
+__meta_kubernetes_pod_ip: The pod IP of the pod object.
+__meta_kubernetes_pod_label_<labelname>: Each label from the pod object.
+__meta_kubernetes_pod_labelpresent_<labelname>: truefor each label from the pod object.
+__meta_kubernetes_pod_annotation_<annotationname>: Each annotation from the pod object.
+__meta_kubernetes_pod_annotationpresent_<annotationname>: true for each annotation from the pod object.
+__meta_kubernetes_pod_container_init: true if the container is an InitContainer
+__meta_kubernetes_pod_container_name: Name of the container the target address points to.
+__meta_kubernetes_pod_container_port_name: Name of the container port.
+__meta_kubernetes_pod_container_port_number: Number of the container port.
+__meta_kubernetes_pod_container_port_protocol: Protocol of the container port.
+__meta_kubernetes_pod_ready: Set to true or false for the pod's ready state.
+__meta_kubernetes_pod_phase: Set to Pending, Running, Succeeded, Failed or Unknown in the lifecycle.
+__meta_kubernetes_pod_node_name: The name of the node the pod is scheduled onto.
+__meta_kubernetes_pod_host_ip: The current host IP of the pod object.
+__meta_kubernetes_pod_uid: The UID of the pod object.
+__meta_kubernetes_pod_controller_kind: Object kind of the pod controller.
+__meta_kubernetes_pod_controller_name: Name of the pod controller.
+endpoints
+The endpoints role discovers targets from listed endpoints of a service. For each endpoint address one target is discovered per port. If the endpoint is backed by a pod, all additional container ports of the pod, not bound to an endpoint port, are discovered as targets as well.
+
+Available meta labels:
+
+__meta_kubernetes_namespace: The namespace of the endpoints object.
+__meta_kubernetes_endpoints_name: The names of the endpoints object.
+For all targets discovered directly from the endpoints list (those not additionally inferred from underlying pods), the following labels are attached:
+__meta_kubernetes_endpoint_hostname: Hostname of the endpoint.
+__meta_kubernetes_endpoint_node_name: Name of the node hosting the endpoint.
+__meta_kubernetes_endpoint_ready: Set to true or false for the endpoint's ready state.
+__meta_kubernetes_endpoint_port_name: Name of the endpoint port.
+__meta_kubernetes_endpoint_port_protocol: Protocol of the endpoint port.
+__meta_kubernetes_endpoint_address_target_kind: Kind of the endpoint address target.
+__meta_kubernetes_endpoint_address_target_name: Name of the endpoint address target.
+If the endpoints belong to a service, all labels of the role: service discovery are attached.
+For all targets backed by a pod, all labels of the role: pod discovery are attached.
+ingress
+The ingress role discovers a target for each path of each ingress. This is generally useful for blackbox monitoring of an ingress. The address will be set to the host specified in the ingress spec.
+
+Available meta labels:
+
+__meta_kubernetes_namespace: The namespace of the ingress object.
+__meta_kubernetes_ingress_name: The name of the ingress object.
+__meta_kubernetes_ingress_label_<labelname>: Each label from the ingress object.
+__meta_kubernetes_ingress_labelpresent_<labelname>: true for each label from the ingress object.
+__meta_kubernetes_ingress_annotation_<annotationname>: Each annotation from the ingress object.
+__meta_kubernetes_ingress_annotationpresent_<annotationname>: true for each annotation from the ingress object.
+__meta_kubernetes_ingress_class_name: Class name from ingress spec, if present.
+__meta_kubernetes_ingress_scheme: Protocol scheme of ingress, https if TLS config is set. Defaults to http.
+__meta_kubernetes_ingress_path: Path from ingress spec. Defaults to /.
+See below for the configuration options for Kubernetes discovery:
+
+# The information to access the Kubernetes API.
+
+# The API server addresses. If left empty, Prometheus is assumed to run inside
+# of the cluster and will discover API servers automatically and use the pod's
+# CA certificate and bearer token file at /var/run/secrets/kubernetes.io/serviceaccount/.
+[ api_server: <host> ]
+
+# The Kubernetes role of entities that should be discovered.
+# One of endpoints, service, pod, node, or ingress.
+role: <string>
+
+# Optional path to a kubeconfig file. 
+# Note that api_server and kube_config are mutually exclusive.
+[ kubeconfig_file: <filename> ]
+
+# Optional authentication information used to authenticate to the API server.
+# Note that `basic_auth` and `authorization` options are mutually exclusive.
+# password and password_file are mutually exclusive.
+
+# Optional HTTP basic authentication information.
+basic_auth:
+  [ username: <string> ]
+  [ password: <secret> ]
+  [ password_file: <string> ]
+
+# Optional `Authorization` header configuration.
+authorization:
+  # Sets the authentication type.
+  [ type: <string> | default: Bearer ]
+  # Sets the credentials. It is mutually exclusive with
+  # `credentials_file`.
+  [ credentials: <secret> ]
+  # Sets the credentials to the credentials read from the configured file.
+  # It is mutually exclusive with `credentials`.
+  [ credentials_file: <filename> ]
+
+# Optional OAuth 2.0 configuration.
+# Cannot be used at the same time as basic_auth or authorization.
+oauth2:
+  [ <oauth2> ]
+
+# Optional proxy URL.
+[ proxy_url: <string> ]
+
+# Configure whether HTTP requests follow HTTP 3xx redirects.
+[ follow_redirects: <bool> | default = true ]
+
+# TLS configuration.
+tls_config:
+  [ <tls_config> ]
+
+# Optional namespace discovery. If omitted, all namespaces are used.
+namespaces:
+  names:
+    [ - <string> ]
+
+# Optional label and field selectors to limit the discovery process to a subset of available resources.
+# See https://kubernetes.io/docs/concepts/overview/working-with-objects/field-selectors/
+# and https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/ to learn more about the possible
+# filters that can be used. Endpoints role supports pod, service and endpoints selectors, other roles
+# only support selectors matching the role itself (e.g. node role can only contain node selectors).
+
+# Note: When making decision about using field/label selector make sure that this
+# is the best approach - it will prevent Prometheus from reusing single list/watch
+# for all scrape configs. This might result in a bigger load on the Kubernetes API,
+# because per each selector combination there will be additional LIST/WATCH. On the other hand,
+# if you just want to monitor small subset of pods in large cluster it's recommended to use selectors.
+# Decision, if selectors should be used or not depends on the particular situation.
+[ selectors:
+  [ - role: <string>
+    [ label: <string> ]
+    [ field: <string> ] ]]
+
+配置例子：
 # A scrape configuration for running Prometheus on a Kubernetes cluster.
 # This uses separate scrape configs for cluster components (i.e. API server, node)
 # and services to allow each to use different authentication configs.
