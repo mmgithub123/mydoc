@@ -432,6 +432,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
       #nodefs.available<10%
       #imagefs.available<15%
       #nodefs.inodesFree<5％
+      详细见：https://kubernetes.io/zh/docs/tasks/administer-cluster/out-of-resource/
       
       - alert: KubernetesNodeReady
         expr: kube_node_status_condition{condition="Ready",status="true"} == 0
@@ -1189,7 +1190,12 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           description:  "Clock not synchronising.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
 
-
+---------------------------------------------------------------------------------------------------------------------------------------------
+PLEG 耗时高
+histogram_quantile(0.99, sum(rate(kubelet_pleg_relist_duration_seconds_bucket[5m])) by (cluster_id, instance, le) * 
+on(instance, cluster_id) group_left(node) kubelet_node_name{job="kubelet"}) >= 10
+for:5m
+PLEG 操作耗时的99分位数超过10秒
 
 
 
