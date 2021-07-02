@@ -5,6 +5,8 @@ node  :  https://node.demo.do.prometheus.io/metrics
 容器：
 https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md#:~:text=Prometheus%20hardware%20metrics%20%20%20%20Metric%20name,%20%20%20%208%20more%20rows%20
 
+kube-state-metrics:
+https://github.com/kubernetes/kube-state-metrics/blob/master/docs
 
 Prometheus self：
 https://host/metrics
@@ -167,6 +169,8 @@ container_memory_failures_total -- Cumulative count of memory
 
 
 container_memory_working_set_bytes，is what the OOM killer is watching for
+
+
 
 
 
@@ -379,7 +383,15 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
       rules:
 
       #解读：
-      #15分钟内以1分钟步长检测pod在Pending|Unknown|Failed状态
+      kube_pod_status_phase 
+      数据类型：Gauge
+      取值：0或1，采集时间点是哪个状态，哪个状态就为1
+      kube_pod_status_phase{namespace="default", phase="Running", pod="admin-backend-695d86b674-4wxvm"} 1
+      kube_pod_status_phase{namespace="default", phase="Pending", pod="admin-backend-695d86b674-4wxvm"} 0
+      含义：The pods current phase  pod当前的状态阶段
+      阶段取值全集：phase=<Pending|Running|Succeeded|Failed|Unknown>
+      #15分钟内以1分钟间隔抽样检测pod在Pending|Unknown|Failed状态，min_over_time 取这15个值的最小值，如果最小值都大于0，
+      说明全是1，说明15分钟内一直就从来没有处在正常状态过。
       #pod大致流程图：pending-》waiting，containercreating-》running-》crashloopbackoff，unknow，terminating，error-》failed，succeed
       - alert: KubernetesPodNotHealthy
         expr: min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[15m:1m]) > 0
@@ -391,7 +403,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           #team: unknow #three value op,rd,unknow
         annotations:
           #summary: " {{ $_kube_pod_labels_.label_app }}"
-          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"     
+          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"    
      
       #有daemonset和节点不匹配， not scheduled 或者是 not ready，
       - alert: KubernetesDaemonsetRolloutStuck
