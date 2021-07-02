@@ -175,6 +175,16 @@ k8s  Requests and limits :
 CPU is specified as fractions of a CPU or core (down to 1/1000th) and memory is specified in bytes.
 you will be throttled if you exceed the CPU limit, and killed if you exceed the memory limit.
 
+对于集群的监控一般我们需要考虑以下几个方面：
+
+Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指标
+内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns，etcd，apiserver，kubelet，kube-proxy等组件的详细运行状态，
+编排级的 metrics：比如 Deployment 的状态、资源请求、调度和 API 延迟等数据指标
+容器的监控
+Apart from application metrics, we want Prometheus to collect metrics related to the Kubernetes services, nodes and orchestration status.
+Node exporter, for the classical host-related metrics: cpu, mem, network, etc.
+Kube-state-metrics for orchestration and cluster level metrics: deployments, pod metrics, resource reservation, etc.
+Kube-system metrics from internal components: kubelet, etcd, dns, scheduler, etc.
 
 Kubernetes 生态的组件都会提供 /metric 接口以提供自监控:
 cAdvisor：集成在 Kubelet 中。
@@ -226,6 +236,10 @@ just a metrics endpoint. Other entities need to scrape it and provide long term 
 CronJob,DaemonSet,Deployment,Job,LimitRange,Node
 PersistentVolume,PersistentVolumeClaim,Pod,ReplicaSet,ReplicationController,ResourceQuota,Service,StatefulSet,Namespace,Horizontal Pod Autoscaler,Endpoint,Secret,ConfigMap
 
+kube-state-metric 还有一个很重要的使用场景，就是和 cAdvisor 指标组合，原始的 cAdvisor 中只有 Pod 信息，不知道属于哪个 Deployment 或者 sts，
+但是和 kube-state-metric 中的 kube_pod_info 做 join 查询之后就可以显示出来，kube-state-metric 的元数据指标，在扩展 cAdvisor 的 label 中起到了很多作用，
+prometheus-operator 的很多 record rule 就使用了 kube-state-metric 做组合查询。
+kube-state-metric 中也可以展示 Pod 的 label 信息，可以在拿到 cAdvisor 数据后更方便地做 group by，如按照 Pod 的运行环境分类
 
 
 
@@ -251,12 +265,6 @@ For unsupported use cases, check out full monitoring solutions like Prometheus.
 
 
 -----------------------------------------------------------------------------------------------------------------------------
-
-对于集群的监控一般我们需要考虑以下几个方面：
-
-Kubernetes 节点的监控：比如节点的 cpu、load、disk、memory 等指标
-内部系统组件的状态：比如 kube-scheduler、kube-controller-manager、kubedns/coredns，etcd，apiserver，kubelet，kube-proxy等组件的详细运行状态，
-编排级的 metrics：比如 Deployment 的状态、资源请求、调度和 API 延迟等数据指标
 
 kube-state-metric 还有一个很重要的使用场景，就是和 cAdvisor 指标组合，原始的 cAdvisor 中只有 Pod 信息，不知道属于哪个 Deployment 或者 sts，
 但是和 kube-state-metric 中的 kube_pod_info 做 join 查询之后就可以显示出来，kube-state-metric 的元数据指标，在扩展 cAdvisor 的 label 中起到了很多作用，
