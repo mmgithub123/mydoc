@@ -7,6 +7,7 @@ https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md#:~:tex
 
 kube-state-metrics:
 https://github.com/kubernetes/kube-state-metrics/blob/master/docs
+https://alexander.holbreich.org/kube-state-metrics-1-8-0-all-metrics-docu/   所有list及解释
 
 Prometheus self：
 https://host/metrics
@@ -32,9 +33,79 @@ wget http://HOSTNAME:9100/metrics
 
 promql:
 
+匹配语法：
+将标签值反向匹配，或者对正则表达式匹配标签值。如操作符：
+  =：选择正好相等的字符串标签
+  !=：选择不相等的字符串标签
+  =~：选择匹配正则表达式的标签（或子标签）
+  !=：选择不匹配正则表达式的标签（或子标签）
+  
+时间范围通过时间范围选择器[]进行定义。例如，通过以下表达式可以选择最近5分钟内的所有样本数据，如：http_request_total{}[5m]
+除了分钟，支持的单位有 
+s – 秒
+m– 分钟
+h – 小时
+d – 天
+w – 周
+y – 年
+
+
+聚合操作：
+Aggregation operators
+Prometheus supports the following built-in aggregation operators that can be used to aggregate the elements of a single instant vector,
+resulting in a new vector of fewer elements with aggregated values:
+
+sum (calculate sum over dimensions)
+min (select minimum over dimensions)
+max (select maximum over dimensions)
+avg (calculate the average over dimensions)
+group (all values in the resulting vector are 1)
+stddev (calculate population standard deviation over dimensions)
+stdvar (calculate population standard variance over dimensions)
+count (count number of elements in the vector)
+count_values (count number of elements with the same value)
+bottomk (smallest k elements by sample value)
+topk (largest k elements by sample value)
+quantile (calculate φ-quantile (0 ≤ φ ≤ 1) over dimensions)
+These operators can either be used to aggregate over all label dimensions or preserve distinct dimensions by including a without or by clause. 
+These clauses may be used before or after the expression.
+
+<aggr-op> [without|by (<label list>)] ([parameter,] <vector expression>)
+or
+<aggr-op>([parameter,] <vector expression>) [without|by (<label list>)]
+label list is a list of unquoted labels that may include a trailing comma, i.e. both (label1, label2) and (label1, label2,) are valid syntax.
+
+without removes the listed labels from the result vector, while all other labels are preserved the output. by does the opposite and drops labels
+that are not listed in the by clause, even if their label values are identical between all elements of the vector.
+parameter is only required for count_values, quantile, topk and bottomk.
+count_values outputs one time series per unique sample value. Each series has an additional label. The name of that label is given by the aggregation parameter,
+and the label value is the unique sample value. The value of each time series is the number of times that sample value was present.
+topk and bottomk are different from other aggregators in that a subset of the input samples, including the original labels, are returned in the result vector. 
+by and without are only used to bucket the input vector.
+quantile calculates the φ-quantile, the value that ranks at number φ*N among the N metric values of the dimensions aggregated over. φ is provided as the 
+aggregation parameter. For example, quantile(0.5, ...) calculates the median, quantile(0.95, ...) the 95th percentile.
+
+Example:
+If he metric http_requests_total had time series that fan out by application, instance, and group labels, we could calculate the total number of seen HTTP requests
+per application and group over all instances via:
+sum without(instance) (http_requests_total)
+Which is equivalent to:
+sum by (application, group) (http_requests_total)
+If we are just interested in the total of HTTP requests we have seen in all applications, we could simply write:
+sum(http_requests_total)
+To count the number of binaries running each build version we could write:
+count_values("version", build_version)
+To get the 5 largest HTTP requests counts across all instances we could write:
+topk(5, http_requests_total)
+
+
+
+
 offset   偏移修饰器，表示多长时间之前
 
 
+函数列表：
+https://prometheus.io/docs/prometheus/latest/querying/functions/
 
 function mean:
 increase( )  就是末值减去首值
