@@ -32,6 +32,12 @@ wget http://HOSTNAME:9100/metrics
 ------------------------------------------------------------------------------------------------------------
 
 promql:
+https://prometheus.io/docs/prometheus/latest/querying/basics
+
+返回结果类型：
+Instant vector - a set of time series containing a single sample for each time series, all sharing the same timestamp
+Range vector - a set of time series containing a range of data points over time for each time series
+Scalar - a simple numeric floating point value
 
 匹配语法：
 将标签值反向匹配，或者对正则表达式匹配标签值。如操作符：
@@ -50,7 +56,15 @@ w – 周
 y – 年
 
 
-聚合操作：
+子查询：
+Subquery
+Subquery allows you to run an instant query for a given range and resolution. The result of a subquery is a range vector.
+Syntax: <instant_query> '[' <range> ':' [<resolution>] ']' [ @ <float_literal> ] [ offset <duration> ]
+<resolution> is optional. Default is the global evaluation interval.
+
+
+
+聚合操作：   聚会操作得有范围，没有范围得聚合操作没有任何意义
 Aggregation operators
 Prometheus supports the following built-in aggregation operators that can be used to aggregate the elements of a single instant vector,
 resulting in a new vector of fewer elements with aggregated values:
@@ -126,6 +140,10 @@ min_over_time(range-vector): the minimum value of all points in the specified in
 max_over_time(range-vector): the maximum value of all points in the specified interval.
 sum_over_time(range-vector): the sum of all values in the specified interval.
 count_over_time(range-vector): the count of all values in the specified interval.
+avg_over_time()  #指定间隔内所有点的平均值。
+min_over_time()  #指定间隔中所有点的最小值。
+max_over_time()  #指定间隔内所有点的最大值。
+sum_over_time()  #指定时间间隔内所有值的总和
 
 4，向量与向量之间的计算
 
@@ -453,7 +471,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
     - name: pro-kube-state-metrics-rule.rules
       rules:
 
-      #解读：
+       #解读：
       kube_pod_status_phase 
       数据类型：Gauge
       取值：0或1，采集时间点是哪个状态，哪个状态就为1
@@ -461,6 +479,15 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
       kube_pod_status_phase{namespace="default", phase="Pending", pod="admin-backend-695d86b674-4wxvm"} 0
       含义：The pods current phase  pod当前的状态阶段
       阶段取值全集：phase=<Pending|Running|Succeeded|Failed|Unknown>
+      kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}:
+      某个时间点，取出一个pod的状态，看是否存在于Pending|Unknown|Failed这三种状态之中，如果是则三种状态的值相加为1，不是为0
+      sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) 
+      同一个pod的"Pending|Unknown|Failed"状态求和
+      但这只是一种当前状态，我们取过去15分钟内，以1分钟为间隔进行抽样，取出15分钟内的状态
+      sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[15m:1m]
+      这样每一个pod都有一个15分钟内的状态向量，对于这15分钟内的以1分钟为步长抽样的15个状态，如果全是1，就说明一直处于Pending|Unknown|Failed
+      三种状态中的某一个，那么全是1，就可以表示成，最小值都大于0
+      min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[15m:1m]) > 0
       #15分钟内以1分钟间隔抽样检测pod在Pending|Unknown|Failed状态，min_over_time 取这15个值的最小值，如果最小值都大于0，
       说明全是1，说明15分钟内一直就从来没有处在正常状态过。
       #pod大致流程图：pending-》waiting，containercreating-》running-》crashloopbackoff，unknow，terminating，error-》failed，succeed
@@ -474,7 +501,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           #team: unknow #three value op,rd,unknow
         annotations:
           #summary: " {{ $_kube_pod_labels_.label_app }}"
-          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"    
+          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"  
      
       #有daemonset和节点不匹配， not scheduled 或者是 not ready，
       - alert: KubernetesDaemonsetRolloutStuck
