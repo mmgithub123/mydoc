@@ -6,6 +6,9 @@ node  :  https://node.demo.do.prometheus.io/metrics
 https://github.com/google/cadvisor/blob/master/docs/storage/prometheus.md#:~:text=Prometheus%20hardware%20metrics%20%20%20%20Metric%20name,%20%20%20%208%20more%20rows%20
 
 kube-state-metrics:
+很多指标，直接在GitHub里搜索代码就可以了：
+比如：https://github.com/kubernetes/kube-state-metrics/search?q=kube_daemonset_status_number_ready
+
 https://github.com/kubernetes/kube-state-metrics/blob/master/docs
 https://alexander.holbreich.org/kube-state-metrics-1-8-0-all-metrics-docu/   所有list及解释
 
@@ -162,6 +165,9 @@ vector1 on(label) group_right vector2
 
 
 metric mean:
+
+
+
 一些指标表：https://lnsyyj.github.io/2019/05/27/prometheus-node-exporter-%E7%9B%91%E6%8E%A7%E9%A1%B9/
 
 1，container_cpu_usage_seconds_total	
@@ -471,7 +477,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
     - name: pro-kube-state-metrics-rule.rules
       rules:
 
-       #解读：
+      #解读：
       kube_pod_status_phase 
       数据类型：Gauge
       取值：0或1，采集时间点是哪个状态，哪个状态就为1
@@ -501,11 +507,20 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           #team: unknow #three value op,rd,unknow
         annotations:
           #summary: " {{ $_kube_pod_labels_.label_app }}"
-          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"  
+          description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"     
+     
      
       #有daemonset和节点不匹配， not scheduled 或者是 not ready，
+       kube_daemonset_status_number_ready    gauge
+       The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
+       daemonset pod 既是running 又 ready 的节点数。
+       
+       kube_daemonset_status_desired_number_scheduled gauge
+       The number of nodes that should be running the daemon pod.
+       需要运行daemon pod 的节点数
+       
       - alert: KubernetesDaemonsetRolloutStuck
-        expr: kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 or kube_daemonset_status_desired_number_scheduled - kube_daemonset_status_current_number_scheduled > 0
+        expr: kube_daemonset_status_number_ready / kube_daemonset_status_desired_number_scheduled * 100 < 100 
         for: 10m
         labels:
           severity: error
@@ -516,10 +531,19 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           summary: Kubernetes DaemonSet rollout stuck (instance {{ $labels.instance }})
           description: "Some Pods of DaemonSet are not scheduled or not ready\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      #daemonset运行在不该运行的节点上面
+
+      kube_daemonset_status_number_misscheduled gauge
+      The number of nodes running a daemon pod but are not supposed to
+      还没运行daemon pod 的节点数。
+      因为在扩容时，一定有一个时间点，是还没来得及调度的，所以这时候如果报，是误报，所以加一个时间间隔，
+      这个15分钟间隔，来自GitHub讨论及prometheus-operator官方：
+      https://github.com/kubernetes/kube-state-metrics/issues/812
+      https://github.com/kubernetes-monitoring/kubernetes-mixin/issues/347
+      https://github.com/helm/charts/blob/master/stable/prometheus-operator/templates/prometheus/rules-1.14/kubernetes-apps.yaml#L149-L156
+      
       - alert: KubernetesDaemonsetMisscheduled
         expr: kube_daemonset_status_number_misscheduled > 0
-        for: 1m
+        for: 15m
         labels:
           severity: error
           env: prod
