@@ -321,6 +321,7 @@ https://www.weave.works/blog/labels-in-prometheus-alerts-think-twice-before-usin
 踩坑与最佳实践：
 https://blog.csdn.net/mingongge/article/details/89507202
 
+http://elatov.github.io/2020/01/alerting-with-prometheus-on-kubernetes/
 https://zhuanlan.zhihu.com/p/372271667
 https://www.infoq.cn/article/Uj12kNwoRCwG0kke8Zfv
 https://mp.weixin.qq.com/s?__biz=MzkwOTIxNDQ3OA==&mid=2247532438&idx=1&sn=bb332ead7ab472cc49bcb13658817b49&source=41#wechat_redirect
