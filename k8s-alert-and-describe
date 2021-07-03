@@ -522,7 +522,12 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
     - name: pro-kube-state-metrics-rule.rules
       rules:
 
+     
       #解读：
+      #15分钟内以1分钟间隔抽样检测pod在Pending|Unknown|Failed状态，min_over_time 取这15个值的最小值，如果最小值都大于0，
+      说明全是1，说明15分钟内一直就从来没有处在正常状态过。
+      
+      说明：
       kube_pod_status_phase 
       数据类型：Gauge
       取值：0或1，采集时间点是哪个状态，哪个状态就为1
@@ -555,7 +560,10 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           description: "Pod has been in a non-ready state for longer than 15 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"     
      
      
-      #有daemonset和节点不匹配， not scheduled 或者是 not ready，
+      #解读：
+     有daemonset pod 节点异常，处在非 running and ready 状态
+      
+      说明：
        kube_daemonset_status_number_ready    gauge
        The number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready.
        daemonset pod 既是running 又 ready 的节点数。
@@ -577,6 +585,9 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           description: "Some Pods of DaemonSet are not scheduled or not ready\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
 
+      存在还没运行daemonset pod 的节点
+      
+      说明：
       kube_daemonset_status_number_misscheduled gauge
       The number of nodes running a daemon pod but are not supposed to
       还没运行daemon pod 的节点数。
@@ -598,6 +609,10 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           summary: Kubernetes DaemonSet misscheduled (instance {{ $labels.instance }})
           description: "Some DaemonSet Pods are running where they are not supposed to run\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
+
+      节点处在非ready状态
+
+      说明：
       #已经10分钟不是condition="Ready",status="true"了。condition共有Ready ，DiskPressure，MemoryPressure ，
       #PIDPressure ，NetworkUnavailable  5种状态。
       #节点状态的定义：kubelet 会将一个或多个”驱逐信号“映射到对应的节点状态。如果满足硬驱逐阈值，或者满足独立于其关联宽限期的软驱逐阈值时，
@@ -617,7 +632,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
       #nodefs.available<10%
       #imagefs.available<15%
       #nodefs.inodesFree<5％
-      详细见：https://kubernetes.io/zh/docs/tasks/administer-cluster/out-of-resource/
+      参考：https://kubernetes.io/zh/docs/tasks/administer-cluster/out-of-resource/
       
       - alert: KubernetesNodeReady
         expr: kube_node_status_condition{condition="Ready",status="true"} == 0
@@ -630,31 +645,9 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           summary: Kubernetes Node ready (instance {{ $labels.instance }})
           description: "Node {{ $labels.node }} has been unready for a long time\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      #见alert: KubernetesNodeReady
-      - alert: KubernetesMemoryPressure
-        expr: kube_node_status_condition{condition="MemoryPressure",status="true"} == 1
-        for: 2m
-        labels:
-          severity: error
-          env: prod
-          team: op #three value op,rd,unknow
-        annotations:
-          summary: Kubernetes memory pressure (instance {{ $labels.instance }})
-          description: "{{ $labels.node }} has MemoryPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
       
-      #见alert: KubernetesNodeReady
-      - alert: KubernetesDiskPressure
-        expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
-        for: 2m
-        labels:
-          severity: error
-          env: prod
-          team: op #three value op,rd,unknow
-        annotations:
-          summary: Kubernetes disk pressure (instance {{ $labels.instance }})
-          description: "{{ $labels.node }} has DiskPressure condition\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
-
-
+      可运行的pod数量快满了
+ 
       #意思是说running pod数在总可分配pod数的百分比
       #count(kube_pod_status_phase{phase="Running"})  集群一共running的pod数
       #kube_node_status_allocatable_pods              每个节点可分配pod
@@ -672,8 +665,33 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           summary: Kubernetes out of capacity (instance {{ $labels.instance }})
           description: "{{ $labels.node }} is out of capacity\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
-      # 容器oom killer
-      #过去10分钟内，容器重启次数大于1 且最近10分钟内容器终止原因是OOMKilled
+
+      # 过去10分钟内，容器重启过 且容器终止原因是OOMKilled
+      
+      说明：
+      kube_pod_container_status_restarts_total counter
+      The number of container restarts per container.A count of the restarts, with no detail on the reason.
+      每个容器的重启次数，只计数，不管原因
+      
+      kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1
+      10分钟内重启次数大于1次，就是说10分钟内重启过
+       
+       kube_pod_container_status_last_terminated_reason gauge
+       Describes the last reason the container was in terminated state.
+       This is a (binary) gauge which has a value of 1 for the current reason, and 0 for all other reasons.
+       容器最后一次在终止状态的原因。(原因一共有五种：Completed"，ContainerCannotRun，"DeadlineExceeded"，"Error"，"OOMKilled")
+       
+       容器状态共有三种：
+       There are three possible container states: Waiting, Running, and Terminated.
+       waiting状态：在初始化中，比如，拉镜像，应用secret。
+       pulling the container image from a container image registry, or applying Secret data.
+       
+       min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1
+       因为数据点要么是0要么是1，而表达式说最近10m内的所有数据点，最小值都都等于1，说明全是1，那么说明容器终止原因只是OOMKilled
+       
+       and ignoring (reason)    做了集合的 and 操作。因为忽略了reason，那么意思就是两边一样。也就是
+       过去10分钟内，容器重启过 且容器终止原因是OOMKilled。中的且
+      
       - alert: KubernetesContainerOomKiller
         expr: (kube_pod_container_status_restarts_total - kube_pod_container_status_restarts_total offset 10m >= 1) and ignoring (reason) min_over_time(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}[10m]) == 1
         for: 0m
@@ -685,6 +703,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
         annotations:
           summary: Kubernetes container oom killer (instance {{ $labels.instance }})
           description: "Container {{ $labels.container }} in pod {{ $labels.namespace }}/{{ $labels.pod }} has been OOMKilled {{ $value }} times in the last 10 minutes.\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+}\n  LABELS = {{ $labels }}"
 
       #pvc剩余空间小于10%了
       - alert: KubernetesVolumeOutOfDiskSpace
