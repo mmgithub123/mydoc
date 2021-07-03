@@ -38,6 +38,11 @@ promql:
 https://prometheus.io/docs/prometheus/latest/querying/basics
 
 返回结果类型：
+PromQL 查询结果有下面4种类型：
+
+即时数据 (Instant vector): 一组时间序列，每个时间序列包含一个样本，所有样本共享相同的时间戳，例如：http_requests_total
+区间数据 (Range vector): 组时间序列，其中包含每个时间序列随时间的一系列数据点，例如：http_requests_total[5m]
+纯量数据 (Scalar): 纯量只有一个数字，没有时序，例如：count(http_requests_total)
 Instant vector - a set of time series containing a single sample for each time series, all sharing the same timestamp
 Range vector - a set of time series containing a range of data points over time for each time series
 Scalar - a simple numeric floating point value
@@ -121,6 +126,44 @@ topk(5, http_requests_total)
 offset   偏移修饰器，表示多长时间之前
 
 
+
+集合运算符
+通过集合运算，可以在两个瞬时向量与瞬时向量之间进行相应的集合操作。目前，Prometheus支持以下集合运算符：
+
+and 与操作
+or 或操作
+unless 排除操作
+and 与操作
+vector1 and vector2 进行一个与操作，会产生一个新的集合。该集合中的元素同时在 vector1 和 vector2 中都存在。
+
+例如我们有 vector1 为 A B C，vector2 为 B C D，那么 vector1 and vector2 的结果为：B C。
+
+or 或操作
+文章首发于【陈树义】公众号，点击跳转到原文：https://mp.weixin.qq.com/s/wnudWqfafzKUoDk4ke5Npg
+vector1 and vector2 进行一个或操作，会产生一个新的集合。该集合中包含 vector1 和 vector2 中的所有元素。
+
+例如我们有 vector1 为 A B C，vector2 为 B C D，那么 vector1 or vector2 的结果为：A B C D。
+
+unless 排除操作
+vector1 and vector2 进行一个或操作，会产生一个新的集合。该集合首先取 vector1 集合的所有元素，然后排除掉所有在 vector2 中存在的元素。
+
+例如我们有 vector1 为 A B C，vector2 为 B C D，那么 vector1 unless vector2 的结果为：A。
+
+操作符优先级
+在PromQL操作符中优先级由高到低依次为：
+
+^
+*, /, %
++, -
+==, !=, <=, <, >=, >
+and, unless
+or
+
+
+
+
+
+
 函数列表：
 https://prometheus.io/docs/prometheus/latest/querying/functions/
 
@@ -159,6 +202,8 @@ vector1 / ignoring(code) vector2
 多对一匹配和一对多
 vector1 on(label) group_left vector2
 vector1 on(label) group_right vector2
+
+一对一，找到这个操作符的两边向量元素的相同元素。默认情况下，操作符的格式是vector1 [operate] vector2。如果它们有相同的标签和值，则表示相匹配。
 
 
 
