@@ -43,6 +43,9 @@ wget http://HOSTNAME:9100/metrics
 
 
 ------------------------------------------------------------------------------------------------------------
+实现参考：
+https://pt.slideshare.net/Sysdig/15-kubernetes-failure-points-you-should-watch
+-----------------------------------------------------------------------------------------------------------
 
 promql:
 https://prometheus.io/docs/prometheus/latest/querying/basics
@@ -658,6 +661,8 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
 
       
       可运行的pod数量快满了
+      参考链接：
+      https://cloud.google.com/kubernetes-engine/docs/how-to/flexible-pod-cidr?hl=zh-cn
  
       #意思是说running pod数在总可分配pod数的百分比
       #count(kube_pod_status_phase{phase="Running"})  集群一共running的pod数
@@ -1083,6 +1088,8 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
           description: "A container has disappeared\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
 
       #3分钟容器使用CPU时间平均量，按instance, name, pod分组求和，×100后大于80
+      https://blog.freshtracks.io/a-deep-dive-into-kubernetes-metrics-part-3-container-resource-metrics-361c5ee46e66
+      
       - alert: ContainerCpuUsage
         expr: (sum(rate(container_cpu_usage_seconds_total[3m])) BY (instance, name,pod) * 100) > 80
         for: 2m
