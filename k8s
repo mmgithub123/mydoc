@@ -115,9 +115,15 @@ PodRestart
 
 pod状态：
 Pending，  Running ， Succeeded ， Failed，Unknown
+A given Pod (as defined by a UID) is never "rescheduled" to a different node; instead, that Pod can be replaced by a new, 
+near-identical Pod, with even the same name if desired, but with a different UID.
+
 
 容器状态：
-Waiting, Running, and Terminated
+There are three possible container states:
+Waiting, Running, and Terminated.
+waiting，（进入running后容器过程：initc，poststart ，readyness，liveness，prestop），terminated
+the terminated state have five reason : reason="Completed"，reason="ContainerCannotRun，reason="DeadlineExceeded"， reason="Error"，reason="OOMKilled"
 
 pod条件：
 PodScheduled: the Pod has been scheduled to a node.
