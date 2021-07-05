@@ -747,10 +747,20 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
 
 
 
-      #一分钟内重启次数大于三次，且持续了2分钟
+     重启策略
+      https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/
+   
+      
+       After containers in a Pod exit, the kubelet restarts them with an exponential back-off delay (10s, 20s, 40s, …), 
+       that is capped at five minutes. 最大间隔5分钟
+       0   10   30   70  150   310   610  620
+           1                  间隔5分钟6    7
+       Once a container has executed for 10 minutes without any problems, the kubelet resets the 
+       restart backoff timer for that container
+       
       - alert: KubernetesPodCrashLooping
-        expr: increase(kube_pod_container_status_restarts_total[1m]) > 3
-        for: 2m
+        expr: increase(kube_pod_container_status_restarts_total[5m]) > 4
+        for: 0m
         labels:
           severity: error
           env: prod
@@ -759,6 +769,7 @@ rate(container_cpu_cfs_throttled_seconds_total[3m]) > 1
         annotations:
           summary: Kubernetes pod crash looping (instance {{ $labels.instance }})
           description: "Pod {{ $labels.pod }} is crash looping\n  VALUE = {{ $value }}\n  LABELS = {{ $labels }}"
+
 
 
       #api client 500 请求占比超过 1%了
