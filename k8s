@@ -302,6 +302,8 @@ prometheus--->触发阈值--->超出持续时间--->alertmanager--->分组|抑�
 
 报警规则：
          https://github.com/helm/charts/blob/master/stable/prometheus-operator/templates/prometheus/rules-1.14/kubernetes-apps.yaml
+         https://github.com/kubernetes-monitoring/kubernetes-mixin/blob/master/runbook.md#alert-name-kubepodcrashlooping
+         https://docs.kubermatic.com/kubermatic/v2.17/cheat_sheets/alerting_runbook/
          https://www.circonus.com/2020/09/guide-to-kubernetes-monitoring-part-1/
          https://www.circonus.com/2021/01/guide-to-monitoring-kubernetes-part-2-which-metrics-and-health-conditions-you-should-be-monitoring/
          https://tanzu.vmware.com/developer/guides/kubernetes/observability-k8s-monitoring-checklist/
@@ -322,6 +324,7 @@ https://www.weave.works/blog/labels-in-prometheus-alerts-think-twice-before-usin
 踩坑与最佳实践：
 https://blog.csdn.net/mingongge/article/details/89507202
 
+https://github.com/kubernetes/community/blob/master/contributors/design-proposals/instrumentation/monitoring_architecture.md
 http://elatov.github.io/2020/01/alerting-with-prometheus-on-kubernetes/
 https://zhuanlan.zhihu.com/p/372271667
 https://www.infoq.cn/article/Uj12kNwoRCwG0kke8Zfv
