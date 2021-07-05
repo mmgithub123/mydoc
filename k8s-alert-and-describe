@@ -1,5 +1,15 @@
 prometheus metric list:
 
+metrics 生命周期：
+Alpha metric → Stable metric → Deprecated metric → Hidden metric → Deletion
+Alpha→稳定→已弃用→隐藏→删除
+说明
+Alpha指标没有稳定性保证；因此，可以随时对其进行修改或删除。
+稳定的指标不会改变；具体而言:
+指标本身不会被删除（或重命名）
+指标的类型不会被修改
+
+
 node  :  https://node.demo.do.prometheus.io/metrics
 
 容器：
@@ -175,6 +185,7 @@ rate(）
 eg:某一分钟cpu使用率 rate()[1m]=某一分钟cpu使用时间/60s
 即 rate()=increase( )/60s
 1，rate()函数：获取指定时间段的平均量,(last值-first值)/时间差s
+ Rate produces a per second result, increase is per the time range you pass it.
 
 2，predict_linear(),对曲线变化速率进行计算，起到一定的预测作用。比如当前这1个小时的磁盘可用率急剧下降，这种情况可能导致磁盘很快被写满，这时可以使用该函数，
 用当前1小时的数据去预测未来几个小时的状态，实现提前告警predict_linear( node_filesystem_free_bytes{mountpoint="/"}[1h],4*3600 ) < 0   
