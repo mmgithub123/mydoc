@@ -1,0 +1,18 @@
+请求链路
+
+一、外网访问
+1.1 接网关
+- dns -> waf -> elb（tcp）-> soul-server（ecs） -> elb（tcp）-> service(lb) -> pod
+
+1.2 不接网关
+dns-->waf-->elb(eip)-->ecs
+dns -> waf -> elb（tcp）-> service(lb) -> pod
+
+waf实现：
+1. https -> http协议转换
+2. http redirect https
+
+
+二、内网访问
+
+dns->elb -> nginx-> elb（tcp）-> service(lb) -> pod
