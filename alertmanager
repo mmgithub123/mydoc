@@ -1,2 +1,39 @@
 https://blog.51cto.com/xujpxm/2055970
 https://www.imooc.com/article/289509
+
+配置上，基本是
+
+路由
+
+分组
+
+抑制
+
+静默
+
+
+数据点相关的周期频率：
+https://www.prometheus.io/docs/prometheus/latest/configuration/configuration/
+https://github.com/prometheus/alertmanager
+
+1， scrape_interval: How frequently to scrape targets default=1m。Server端抓取数据的时间间隔
+2. scrape_timeout: How long until a scrape request times out. default = 10s 数据抓取的超时时间
+3. evaluation_interval: How frequently to evaluate rules. default = 1m 评估报警规则的时间间隔
+
+
+ group_wait： 
+ How long to initially wait to send a notification for a group of alerts. Allows to wait for an inhibiting alert to arrive or collect more initial alerts 
+ for the same group. (Usually ~0s to few minutes. default = 30s)
+ 发送一组新的警报的初始等待时间,也就是初次发警报的延时
+ 
+2. group_interval：
+How long to wait before sending a notification about new alerts that are added to a group of alerts for which an initial notification 
+has already been sent. (Usually ~5m or more. default = 5m)
+初始警报组如果已经发送，需要等待多长时间再发送同组新产生的其他报警
+
+3. repeat_interval: 
+How long to wait before sending a notification again if it has already been sent successfully for an alert 
+(Usually ~3h or more. default = 4h ) 
+如果警报已经成功发送，间隔多长时间再重复发送
+
+
