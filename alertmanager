@@ -14,6 +14,11 @@ curl -XPOST https://host/-/reload
 
 静默
 
+流程逻辑：
+Alertmanager 收到之后，
+先根据 route 判断它属于哪个 group 、应该发送给哪个 receiver 。
+再判断该 group 当前是否处于冷却阶段、是否被 Silence 静音、是否被 Inhibit 抑制。如果都没有，则立即发送告警消息给用户。
+
 
 数据点相关的周期频率：
 https://www.prometheus.io/docs/prometheus/latest/configuration/configuration/
