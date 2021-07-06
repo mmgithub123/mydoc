@@ -4,6 +4,15 @@ https://www.imooc.com/article/289509
 reload：
 curl -XPOST https://host/-/reload
 
+官方工具，路由树：
+https://prometheus.io/webtools/alerting/routing-tree-editor/
+
+官方配置地址：
+https://prometheus.io/docs/alerting/latest/configuration/#route
+
+解读及架构图：
+https://www.kubernetes.org.cn/5438.html
+
 配置上，基本是
 
 路由
@@ -18,6 +27,124 @@ curl -XPOST https://host/-/reload
 Alertmanager 收到之后，
 先根据 route 判断它属于哪个 group 、应该发送给哪个 receiver 。
 再判断该 group 当前是否处于冷却阶段、是否被 Silence 静音、是否被 Inhibit 抑制。如果都没有，则立即发送告警消息给用户。
+route的完整定义如下：
+（route就是树的一颗节点，https://www.kubernetes.org.cn/5438.html，这里有源码和数据结构）
+而作用route时，就是一个深度优先搜索：
+具体的处理代码很简单，深度优先搜索：警报从 root 开始匹配（root 默认匹配所有警报），然后根据节点中定义的 Matchers 检测警报与节点是否匹配，匹配则继续往下搜索，
+默认情况下第一个”最深”的 match (也就是 DFS 回溯之前的最后一个节点)会被返回。特殊情况就是节点配置了 Continue=true，这时假如这个节点匹配上了，那不会立即返回，
+而是继续搜索，用于支持警报发送给多方这种场景（比如”抄送”)
+
+为什么要设计一个复杂的 Routing Tree 逻辑呢？我们看看 Prometheus 官方的配置例子： 为了简化编写，Alertmanager 的设计是根节点的所有参数都会被子节点继承（除非子节点重写了这个参数）
+
+
+route:
+  # 根节点的警报会发送给默认的接收组
+  # 该节点中的警报会按’cluster’和’alertname’做 Group，每个分组中最多每5分钟发送一条警报，同样的警报最多4小时发送一次
+  receiver:’default-receiver’
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  group_by: [cluster, alertname]
+  # 没有匹配到子节点的警报，会默认匹配到根节点上
+  # 接下来是子节点的配置：
+  routes:
+    # 所有 service 字段为 mysql 或 cassandra 的警报，会发送到’database-pager’这个接收组
+    # 由于继承逻辑，这个节点中的警报仍然是按’cluster’和’alertname’做 Group 的
+  - receiver:’database-pager’
+    group_wait: 10s
+    match_re:
+    service: mysql|cassandra
+    # 所有 team 字段为 fronted 的警报，会发送到’frontend-pager’这个接收组
+    # 很重要的一点是，这个组中的警报是按’product’和’environment’做分组的，因为’frontend’面向用户，更关心哪个’产品’的什么’环境’出问题了
+  - receiver:’frontend-pager’
+    group_by: [product, environment]
+    match:
+    team: frontend
+
+
+
+总结一下，Routing Tree 的设计意图是让用户能够非常自由地给警报归类，然后根据归类后的类别来配置要发送给谁以及怎么发送：
+
+发送给谁？上面已经做了很好的示例，’数据库警报’和’前端警报’都有特定的接收组，都没有匹配上那么就是’默认警报’, 发送给默认接收组
+怎么发送？对于一类警报，有个多个字段来配置发送行为：
+group_by：决定了警报怎么分组，每个 group 只会定时产生一次通知，这就达到了降噪的效果，而不同的警报类别分组方式显然是不一样的，举个例子：
+配置中的 ‘数据库警报’ 是按 ‘集群’ 和 ‘规则名’ 分组的，这表明对于数据库警报，我们关心的是“哪个集群的哪个规则出问题了”，比如一个时间段内，’华东’集群产生了10条 ‘API响应时间过长’ 警报，
+这些警报就会聚合在一个通知里发出来；
+配置中的 ‘前端警报’ 是按 ‘产品’ 和 ‘环境’ 分组的， 这表明对于前端警报，我们关心的是“哪个产品的哪个环境出问题了”
+group_interval 和 group_wait: 控制分组的细节，不细谈，其中 group_interval 控制了这个分组最快多久执行一次 Notification Pipeline
+repeat_interval: 假如一个相同的警报一直 FIRING，Alertmanager 并不会一直发送警报，而会等待一段时间，这个等待时间就是 repeat_interval，显然，不同类型警报的发送频率也是不一样的
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+[ receiver: <string> ]
+[ group_by: '[' <labelname>, ... ']' ]
+[ continue: <boolean> | default = false ]
+
+match:
+  [ <labelname>: <labelvalue>, ... ]
+
+match_re:
+  [ <labelname>: <regex>, ... ]
+
+[ group_wait: <duration> | default = 30s ]
+[ group_interval: <duration> | default = 5m ]
+[ repeat_interval: <duration> | default = 4h ]
+
+routes:
+  [ - <route> ... ]
+每一个告警都会从配置文件中顶级route进入路由树，顶级route必须匹配所有告警（即不能有任何的匹配设置：match、match_re，每一个route都可以定义自己的receiver以及匹配规则。
+默认情况下，告警进入顶级route后会遍历所有的子节点，直到找到最深的匹配route，并将告警发送到route定义的receiver中。如何route中设置continue为false，
+那么告警在匹配到第一个子节点之后就直接停止。如何当前告警匹配不到任何的子节点，那该告警将会基于当前路由节点的receiver配置方式进行处理。
+
+
+
+route:
+  receiver: 'default-receiver'
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  group_by: [cluster, alertname]
+  # All alerts that do not match the following child routes
+  # will remain at the root node and be dispatched to 'default-receiver'.
+  routes:
+  # All alerts with service=mysql or service=cassandra
+  # are dispatched to the database pager.
+  - receiver: 'database-pager'
+    group_wait: 10s
+    matchers:
+    - service=~"mysql|cassandra"
+  # All alerts with the team=frontend label match this sub-route.
+  # They are grouped by product and environment rather than cluster
+  # and alertname.
+  - receiver: 'frontend-pager'
+    group_by: [product, environment]
+    matchers:
+    - team="frontend"
+
+
+
+
+
+是这样吗？
+当一个 group 处于冷却阶段时：
+如果收到一个属于该 group 的新警报，则会等待 group_interval 时长之后让该 group 解除冷却，发送一次消息，并且从当前时刻开始重新计算 repeat_interval 。
+如果一个警报被解决了，也会让该 group 解除冷却，发送一次 resolved 消息。
+如果一个被解决的警报再次出现，也会让该 group 解除冷却，发送一次消息。
+因此，如果一个警报反复被解决又再次出现，则会绕过 repeat_interval 的限制，导致 Alertmanager 频繁发送消息给用户。
+
+route配置：
+https://github.com/prometheus/alertmanager    
+官方有配置解释。
+
+ # All the above attributes are inherited by all child routes and can
+ # overwritten on each.
+ 子覆盖父
 
 
 数据点相关的周期频率：
@@ -45,3 +172,128 @@ How long to wait before sending a notification again if it has already been sent
 如果警报已经成功发送，间隔多长时间再重复发送
 
 
+--------------------------------------------------------------------------------------------------------------------
+
+global:
+  # The smarthost and SMTP sender used for mail notifications.
+  smtp_smarthost: 'localhost:25'
+  smtp_from: 'alertmanager@example.org'
+
+# The root route on which each incoming alert enters.
+route:
+  # The root route must not have any matchers as it is the entry point for
+  # all alerts. It needs to have a receiver configured so alerts that do not
+  # match any of the sub-routes are sent to someone.
+  receiver: 'alert-web-hooker'
+ 
+  # When a new group of alerts is created by an incoming alert, wait at
+  # least 'group_wait' to send the initial notification.
+  # This way ensures that you get multiple alerts for the same group that start
+  # firing shortly after another are batched together on the first
+  # notification.
+  group_wait: 30s
+  
+  # When the first notification was sent, wait 'group_interval' to send a batch
+  # of new alerts that started firing for that group.
+  group_interval: 5m
+  
+  # If an alert has successfully been sent, wait 'repeat_interval' to
+  # resend them.
+  repeat_interval: 3h
+
+  
+  
+  # The labels by which incoming alerts are grouped together. For example,
+  # multiple alerts coming in for cluster=A and alertname=LatencyHigh would
+  # be batched into a single group.
+  group_by: ['severity']
+
+  # All the above attributes are inherited by all child routes and can
+  # overwritten on each.
+
+  # The child route trees.
+  routes:
+  
+  # This route handles all alerts coming from a database service. If there's
+  # no team to handle it, it defaults to the DB team.
+  - match:
+      severity: critical
+     （match之后只能选接收者了？不在一个级别，match之后没办法加route）
+    receiver: team-DB-pager
+    # Also group alerts by affected database.
+    group_by: [alertname, cluster, database]
+    
+    routes:
+    - match:
+        owner: team-X
+      receiver: team-X-pager
+
+    - match:
+        owner: team-Y
+      receiver: team-Y-pager
+  
+  # This routes performs a regular expression match on alert labels to
+  # catch alerts that are related to a list of services.    
+  - match_re:
+      service: ^(foo1|foo2|baz)$
+    receiver: team-X-mails
+
+    # The service has a sub-route for critical alerts, any alerts
+    # that do not match, i.e. severity != critical, fall-back to the
+    # parent node and are sent to 'team-X-mails'
+    routes:
+    - match:
+        severity: critical
+      receiver: team-X-pager
+
+  - match:
+      service: files
+    receiver: team-Y-mails
+
+    routes:
+    - match:
+        severity: critical
+      receiver: team-Y-pager
+
+  
+
+
+# Inhibition rules allow to mute a set of alerts given that another alert is
+# firing.
+# We use this to mute any warning-level notifications if the same alert is
+# already critical.
+inhibit_rules:
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  # Apply inhibition if the alertname is the same.
+  # CAUTION: 
+  #   If all label names listed in `equal` are missing 
+  #   from both the source and target alerts,
+  #   the inhibition rule will apply!
+  equal: ['alertname']
+
+
+receivers:
+- name: 'team-X-mails'
+  email_configs:
+  - to: 'team-X+alerts@example.org, team-Y+alerts@example.org'
+
+- name: 'team-X-pager'
+  email_configs:
+  - to: 'team-X+alerts-critical@example.org'
+  pagerduty_configs:
+  - routing_key: <team-X-key>
+
+- name: 'team-Y-mails'
+  email_configs:
+  - to: 'team-Y+alerts@example.org'
+
+- name: 'team-Y-pager'
+  pagerduty_configs:
+  - routing_key: <team-Y-key>
+
+- name: 'team-DB-pager'
+  pagerduty_configs:
+  - routing_key: <team-DB-key>
