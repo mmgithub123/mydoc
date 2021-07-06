@@ -101,6 +101,16 @@ SPECIAL_TYPE
 注意： 如果在 /etc/config/ 目录中有一些文件，它们将被删除。
 
 ----------------------------------------------------------------------------------------------
+sa:
+
+当你创建一个Pod并没有指定一个service account，它将自动的为Pod在相同的namespace中分配default service account
+kubectl get pods/podname -o yaml   可以查看
+serviceAccount: default
+serviceAccountName: default
+
+Pod可以使用自动挂载的service account凭证来获取访问API的权限
+
+-------------------------------------------------------------------------------------------------------------------
 监控报警
 
 JobDown
