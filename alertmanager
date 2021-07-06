@@ -1,6 +1,9 @@
 https://blog.51cto.com/xujpxm/2055970
 https://www.imooc.com/article/289509
 
+reload：
+curl -XPOST https://host/-/reload
+
 配置上，基本是
 
 路由
