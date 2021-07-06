@@ -27,6 +27,9 @@ kubectl delete -f propod.yaml
 
 kubectl get pods
 
+获取某个节点上的所有pod：
+kubectl get pods --all-namespaces -o wide --field-selector spec.nodeName=
+
 describe可以查看每一资源的详细创建信息：
 kubectl --kubeconfig= describe pvc prometheus  
 kubectl describe pod pod-name -o wide
