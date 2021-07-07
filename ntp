@@ -1,3 +1,15 @@
+命令查看：
+
+timedatectl status
+
+ ntpq -p
+ ----------------------------------------------------------------------------
+ 
+ https://serverfault.com/questions/1043358/prometheus-alerting-on-nodeclocknotsynchronising-for-vms
+ https://stackoverflow.com/questions/65342065/how-do-i-check-whether-my-systems-clock-is-synchronized-to-a-ntp-server
+
+
+
 ntp in k8s
 
 The ntp (Network Time Protocol) package should be installed. This prevents errors with certificate validation that can occur when 
