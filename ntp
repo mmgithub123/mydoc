@@ -17,8 +17,11 @@ the time is not synchronized between the client and server.
 
 https://github.com/prometheus/node_exporter/pull/1850
 https://github.com/prometheus/node_exporter/pull/1851
-
+https://github.com/prometheus/node_exporter/pull/1850/commits/e5ec3c071b92236dde8dd7f2e23b7cc121580657
+https://github.com/prometheus/node_exporter/commit/3762191e66e309106e930ab11f9c080fb4428001
+https://github.com/prometheus/node_exporter/commit/f81747e608ea85ae44e76454eb63f9cb6484fb9e
 
  chronyc：
+ 
  
  chrony 是网络时间协议(NTP)的通用实现
