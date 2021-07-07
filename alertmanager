@@ -27,6 +27,7 @@ https://www.kubernetes.org.cn/5438.html
 Alertmanager 收到之后，
 先根据 route 判断它属于哪个 group 、应该发送给哪个 receiver 。
 再判断该 group 当前是否处于冷却阶段、是否被 Silence 静音、是否被 Inhibit 抑制。如果都没有，则立即发送告警消息给用户。
+
 route的完整定义如下：
 （route就是树的一颗节点，https://www.kubernetes.org.cn/5438.html，这里有源码和数据结构）
 而作用route时，就是一个深度优先搜索：
@@ -77,6 +78,38 @@ repeat_interval: 假如一个相同的警报一直 FIRING，Alertmanager 并不�
 
 
 
+
+route:
+  # 根节点的警报会发送给默认的接收组
+  # 该节点中的警报会按’cluster’和’alertname’做 Group，每个分组中最多每5分钟发送一条警报，同样的警报最多4小时发送一次
+  receiver:’default-receiver’
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  group_by: [alertname]
+  # 没有匹配到子节点的警报，会默认匹配到根节点上
+  # 接下来是子节点的配置：
+  routes:
+  - receiver: alert-web-hooker
+    match:
+    severity: critical
+    group_by: [pod]
+    group_wait: 5s
+    group_interval: 10s 
+    repeat_interval: 2m
+  - receiver: alert-web-hooker
+    match:
+    severity: error
+    group_by: [pod]
+    group_wait: 30s
+    group_interval: 5m 
+    repeat_interval: 1h
+  - receiver: alert-web-hooker
+    match:
+    severity: warning
+    group_by: [pod]
+   
+ 
 
 
 
