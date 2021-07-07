@@ -1203,6 +1203,64 @@ select count(distinct e） from t_ where start_time_ <= now() and end_time_ >= n
 
 
 
+
+
+# HELP  已收货门店数
+ gauge
+ 安卓订单
+ gauge
+已提交商家订单
+ gauge
+ 小程序支付订单
+ gauge
+ 应到上班人数
+ gauge
+ 新进制作订单
+ gauge
+端口SLA
+ gauge
+ 实际上班人数
+ gauge
+其它支付订单
+gauge
+端口平均响应时间
+ gauge
+ IOS支付订单
+ gauge
+解冻单数
+gauge
+已开业门店数
+gauge
+ 最近两分钟注册用户
+ gauge
+ 安卓支付订单
+ gauge
+新建订单
+gauge
+ 已取消订单
+ gauge
+IOS订单
+ gauge
+ 正在营业的门店数
+ gauge
+小程序订单
+gauge
+ 其它订单
+gauge
+ 已完成订单
+ gauge
+已取餐订单
+ gauge
+配送订单
+gauge
+ 解冻单完成数
+gauge
+
+
+
+
+
+
   
   ------------------------------------------------------------------------------------------------------------
   背景知识：
