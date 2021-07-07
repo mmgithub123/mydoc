@@ -29,6 +29,13 @@ Alertmanager 收到之后，
 再判断该 group 当前是否处于冷却阶段、是否被 Silence 静音、是否被 Inhibit 抑制。如果都没有，则立即发送告警消息给用户。
 
 route的完整定义如下：
+
+A route block defines a node in a routing tree and its children. Its optional configuration parameters are inherited from its parent node if not set.
+Every alert enters the routing tree at the configured top-level route, which must match all alerts (i.e. not have any configured matchers). It then traverses 
+the child nodes. If continue is set to false, it stops after the first matching child. If continue is true on a matching node, the alert will continue matching
+against subsequent siblings. If an alert does not match any children of a node (no matching child nodes, or none exist), the alert is handled based on the configuration
+parameters of the current node.
+
 （route就是树的一颗节点，https://www.kubernetes.org.cn/5438.html，这里有源码和数据结构）
 而作用route时，就是一个深度优先搜索：
 具体的处理代码很简单，深度优先搜索：警报从 root 开始匹配（root 默认匹配所有警报），然后根据节点中定义的 Matchers 检测警报与节点是否匹配，匹配则继续往下搜索，
