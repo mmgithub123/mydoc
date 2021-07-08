@@ -1,3 +1,10 @@
+Prometheus：
+为了避免时区的混乱，prometheus所有的组件内部都强制使用Unix时间，对外展示使用UTC时间。
+可以在你的告警程序里面配置编写转换时间的方法
+
+
+--------------------------------------------------------------------------------------
+
 https://blog.51cto.com/xujpxm/2055970
 https://www.imooc.com/article/289509
 
@@ -14,7 +21,7 @@ GET /-/ready
 https://prometheus.io/webtools/alerting/routing-tree-editor/
 
 官方配置地址：
-https://prometheus.io/docs/alerting/latest/configuration/#route
+https://prometheus.io/docs/alerting/latest/configuration/
 
 解读及架构图：
 https://www.kubernetes.org.cn/5438.html
@@ -123,6 +130,14 @@ route:
     group_by: [pod]
    
 ----------------------------------------------------------------------------------------------------------------------------------------
+Prometheus发送给alertmanager的数据结构：
+https://www.prometheus.io/docs/alerting/latest/notifications/
+
+Prometheus模板地址：
+https://www.prometheus.io/docs/prometheus/latest/configuration/template_reference/
+
+这是alertmanager的模板，相应的Prometheus自己也有模板，别搞混了。
+
 报警模板：
 
 We create a file /etc/alertmanager/templates/myorg.tmpl and create a template in it named "slack.myorg.text":
@@ -148,6 +163,43 @@ templates:
 - '/etc/alertmanager/templates/myorg.tmpl'
 
 We reload our Alertmanager by sending a SIGHUP or restart it to load the changed configuration and the new template file. Done.
+
+
+
+alert-web-hooker.tmpl: |-
+    {{ define "webhook.default.message" }}
+    {{- if gt (len .Alerts.Firing) 0 -}}
+    {{- range $index, $alert := .Alerts -}}
+    ======== 异常告警 ========
+    告警名称：{{ $alert.Labels.alertname }}
+    告警时间：{{ $alert.StartsAt }}
+    告警环境：{{ $alert.Labels.env }}
+    告警级别：{{ $alert.Labels.severity }}
+    告警机器：{{ $alert.Labels.instance }}
+    告警服务：{{ $alert.Labels.pod }}
+    告警描述：{{ $alert.Annotations.summary }}
+    告警详情：{{ $alert.Annotations.description }}
+    告警监控图形地址：
+    告警故障恢复参考手册地址：
+    ========== END ==========
+    {{- end }}
+    {{- end }}
+    {{- if gt (len .Alerts.Resolved) 0 -}}
+    {{- range $index, $alert := .Alerts -}}
+    ======== 告警恢复 ========
+    告警名称：{{ $alert.Labels.alertname }}
+    告警时间：{{ $alert.StartsAt }}
+    告警环境：{{ $alert.Labels.env }}
+    告警级别：{{ $alert.Labels.severity }}
+    告警机器：{{ $alert.Labels.instance }}
+    告警服务：{{ $alert.Labels.pod }}
+    告警描述：{{ $alert.Annotations.summary }}
+    告警详情：{{ $alert.Annotations.description }}
+    告警监控图形地址：
+    ========== END ==========
+    {{- end }}
+    {{- end }}
+    {{- end }}
 
 
 
