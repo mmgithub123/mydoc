@@ -3,6 +3,27 @@
 timedatectl status
 
  ntpq -p
+ 
+ ---------------------------------------------------------------------
+ 时间不同步，修复记录：
+ 
+ ntp配置问题，如果使用默认的配置， ntpd 服务 采用 -g -x的默认参数。 
+使用-x 参数： 时间差逐步调整的阈值被提高到600s。即时间差小于600s都是逐步调整的。由于内核的slew rate是0.5ms/s，即每一秒时间差的调整都需要2000s。 
+这是ntp 服务默认的配置参数。  
+鉴于上述情况， 通常建议不要使用-x 参数。修复方法如下：
+修改ntpd服务配置 
+1. 备份配置文件
+cp /usr/lib/systemd/system/ntpd.service /tmp/
+2. 修改服务配置
+编辑ntpd.service文件， 修改 ExceStart 的值为： 
+ExceStart=/usr/sbin/ntpd -u ntp:ntp -g 
+3. 重新加载服务配置
+systemctl daemon-reload 
+4. 重启ntpd服务
+systemctl restart ntpd
+5. 预计等待3-5分钟后， 查看同步情况
+timedatectl status
+ 
  ----------------------------------------------------------------------------
  
  https://serverfault.com/questions/1043358/prometheus-alerting-on-nodeclocknotsynchronising-for-vms
