@@ -17,3 +17,36 @@ to the pods backing it.
 
 
 --------------------------------------------------------------------------------------------------------
+
+pod创建：
+
+The kubelet doesn't create the Pod by itself. Instead, it delegates the work to three other components:
+
+The Container Runtime Interface (CRI) — the component that creates the containers for the Pod.
+The Container Network Interface (CNI) — the component that connects the containers to the cluster network and assigns IP addresses.
+The Container Storage Interface (CSI) — the component that mounts volumes in your containers.
+
+Once all three components have successfully completed, the Pod is Running in your Node and has an IP address assigned.
+然后kubelet会回调，或者说告诉master pod 的 ip，然后就存etcd里了，
+The kubelet reports the IP address back to the control plane.
+
+只有通过readiness和liveness的才会被加入service
+
+端点：
+If the IP address is 10.0.0.3 and the targetPort is 3000, Kubernetes concatenates the two values and calls them an endpoint.
+
+IP address + port = endpoint
+---------------------------------
+10.0.0.3   + 3000 = 10.0.0.3:3000
+
+The endpoints are stored in etcd in another object called Endpoint.
+
+every Service Kubernetes automatically creates an Endpoint object.
+
+The Endpoint object is refreshed with a new list of endpoints when:
+
+A Pod is created.
+A Pod is deleted.
+A label is modified on the Pod.
+
+ every time you create a Pod and after the kubelet posts its IP address to the master Node, Kubernetes updates all the endpoints to reflect the change:
