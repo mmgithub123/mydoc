@@ -7,6 +7,8 @@ netstat -an | grep ESTABLISHED    查看网络连接
 
 sed -i  替换文件内容
 sed -i 's/原字符/新字符/g' regular_express.txt
+批量修改ntpd.service文件内容，完成时间同步
+ansible prodcce -m shell -a "sed -i 's/\$OPTIONS/-g/g' /usr/lib/systemd/system/ntpd.service"
 
 linux 中把一列加到文件的第一列中
 把A 文件的第一列剪切出来做为B文件的第一列，很简单：
