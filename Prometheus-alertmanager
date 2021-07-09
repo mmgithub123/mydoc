@@ -139,6 +139,7 @@ https://www.prometheus.io/docs/prometheus/latest/configuration/template_referenc
 这是alertmanager的模板，相应的Prometheus自己也有模板，别搞混了。
 
 报警模板：
+官方default模板
 
 We create a file /etc/alertmanager/templates/myorg.tmpl and create a template in it named "slack.myorg.text":
 
