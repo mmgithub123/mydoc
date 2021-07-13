@@ -1247,12 +1247,18 @@ container_memory_working_set_bytes，is what the OOM killer is watching for
 17，
 kube_deployment_status_observed_generation
 kube_deployment_metadata_generation
-deployment下  replica set的版本，可以版本回退（undo），可以滚动更新。
+
 generation: 
 
 系统设置的一个单调递增的数，表示每个资源期望状态的代际，比如deployment下  replica set的版本，可以版本回退（undo），可以滚动更新。
 a sequence number representing a specific generation of the desired state. Set by the system and monotonically increasing, per-resource.
 May be compared, such as for RAW and WAW consistency.
+简单说，generation是spec里做的更改后的代际（版本），是提交给apiserver的，而observedGeneration是控制器暴露的，要与generation保持一致的。
+in some objects, generation is incremented by the server as part of persisting writes affecting the spec of an object.
+some objects' status fields have an observedGeneration subfield for controllers to persist the generation that was last acted on.
+the controller reads the object, compares generation to the persisted status.observedGeneration, and if they differ, acts on the spec and records 
+the results in the status with the newly observed generation。
+
 
 kube_deployment_metadata_generation 
 Sequence number representing a specific generation of the desired state.
@@ -1267,6 +1273,7 @@ the desired state of the resource. This can be used, for instance, to ensure tha
 
 If the primary resource your controller is reconciling supports ObservedGeneration in its status, 
 make sure you correctly set it to metadata.Generation whenever the values between the two fields mismatches.
+
 
 
 
