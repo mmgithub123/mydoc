@@ -65,3 +65,25 @@ Each object that you store has three parts:
 
 A Kubernetes Deployment managed ReplicaSet. Each one represents a different version of the deployed application.
  Each ReplicaSet manages a set of identically versioned Pods.
+
+yaml结构：
+metadata
+spec
+status
+conditions
+
+the metadata contains again the deployment revision number. This is how a Deployment knows which ReplicaSet is the current one.
+
+
+resourceVersion will change after any modification of the object.
+The reason of it's existence is to avoid concurrency problems where multiple clients try to modify the same k8s resource. 
+This pattern is pretty common also in databases and you can find more info about it:
+其实就是并发控制，乐观锁
+
+Same goes for any change in the deployment k8s resource which will trigger re-deployment. the generation value will be incremented by 1, 
+and then it will take some time until observedGeneration will be equal to generation value.
+
+generation：
+系统设置的一个单调递增的数，表示每个资源期望状态的代际，比如deployment下  replica set的版本，可以版本回退（undo），可以滚动更新。
+a sequence number representing a specific generation of the desired state. Set by the system and monotonically increasing, per-resource.
+May be compared, such as for RAW and WAW consistency.
