@@ -1244,7 +1244,29 @@ container_memory_failures_total -- Cumulative count of memory
 container_memory_working_set_bytes，is what the OOM killer is watching for
 
 
+17，
+kube_deployment_status_observed_generation
+kube_deployment_metadata_generation
+deployment下  replica set的版本，可以版本回退（undo），可以滚动更新。
+generation: 
 
+系统设置的一个单调递增的数，表示每个资源期望状态的代际，比如deployment下  replica set的版本，可以版本回退（undo），可以滚动更新。
+a sequence number representing a specific generation of the desired state. Set by the system and monotonically increasing, per-resource.
+May be compared, such as for RAW and WAW consistency.
+
+kube_deployment_metadata_generation 
+Sequence number representing a specific generation of the desired state.
+kube_deployment_metadata_generation gauge
+
+kube_deployment_status_observed_generation 
+The generation observed by the deployment controller.
+kube_deployment_status_observed_generation gauge
+
+Some resources report the observedGeneration, which is the generation most recently observed by the component responsible for acting upon changes to 
+the desired state of the resource. This can be used, for instance, to ensure that the reported status reflects the most recent desired status.
+
+If the primary resource your controller is reconciling supports ObservedGeneration in its status, 
+make sure you correctly set it to metadata.Generation whenever the values between the two fields mismatches.
 
 
 
