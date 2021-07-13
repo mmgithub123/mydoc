@@ -50,3 +50,18 @@ A Pod is deleted.
 A label is modified on the Pod.
 
  every time you create a Pod and after the kubelet posts its IP address to the master Node, Kubernetes updates all the endpoints to reflect the change:
+
+
+------------------------------------------------------------------------------------------------------
+容器：
+容器名称至少有6个字段，中间用下划线隔开。所有kubernetes启动的容器的containerNamePrefix都是k8s。
+官方格式：containerNamePrefix_containerName_PodFullName_namespace_PodUID_restartCount
+
+
+---------------------------------------------------------------------------------------------------------
+deployment：
+Each object that you store has three parts:
+ the metadata, a specification and the current observed status.
+
+A Kubernetes Deployment managed ReplicaSet. Each one represents a different version of the deployed application.
+ Each ReplicaSet manages a set of identically versioned Pods.
